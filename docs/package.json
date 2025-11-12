@@ -1,0 +1,15 @@
+{
+  "name": "heb_scout",
+  "type": "module",
+  "version": "0.1.0",
+  "files": [
+    "heb_scout_bg.wasm",
+    "heb_scout.js",
+    "heb_scout.d.ts"
+  ],
+  "main": "heb_scout.js",
+  "types": "heb_scout.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}

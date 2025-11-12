@@ -1,0 +1,580 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>HEBPath Setup</title>
+    <style>
+      :root{
+        --bg:#0b0b0d; --fg:#e8eef6; --muted:#a8b0bd; --accent:#cfe8ff; --accent-700:#001e40;
+        --glass: rgba(16,18,20,0.55);
+        --glass-brd: rgba(255,255,255,0.14);
+        --card: rgba(16,18,20,0.65);
+      }
+      *, *::before, *::after{ box-sizing: border-box; }
+      html, body{ height:100%; background:var(--bg); color:var(--fg); margin:0; font: 15px/1.5 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+
+      .bg-gradient{ position:fixed; inset:0; z-index:-1; pointer-events:none; filter: blur(60px) saturate(1.1); opacity:.95; background:
+        radial-gradient(1200px 800px at 10% 10%, rgba(100,160,255,.25), transparent 70%),
+        radial-gradient(900px 700px at 90% 20%, rgba(180,120,255,.18), transparent 70%),
+        radial-gradient(900px 700px at 30% 90%, rgba(120,255,200,.15), transparent 70%),
+        linear-gradient(180deg, rgba(10,12,14,1), rgba(10,12,14,.92));
+        animation: bgFloat 26s linear infinite; }
+      @keyframes bgFloat{ 0%{background-position:0 0,0 0,0 0,0 0} 50%{background-position:30px -20px,-40px 35px,40px -30px,0 0} 100%{background-position:0 0,0 0,0 0,0 0} }
+
+      .wrap{ display:grid; grid-template-rows:auto 1fr; min-height:100dvh; }
+      .topbar{ position:sticky; top:0; z-index:10; height:56px; display:flex; align-items:center; justify-content:space-between; padding:12px 16px; backdrop-filter: blur(14px) saturate(1.05); -webkit-backdrop-filter: blur(14px) saturate(1.05); background:linear-gradient(to bottom, rgba(0,0,0,.28), rgba(0,0,0,0)); border-bottom:1px solid var(--glass-brd); }
+      .topbar h1{ font-size:18px; margin:0; font-weight:650; letter-spacing:.2px; }
+      .container{ max-width:980px; margin:16px auto 80px; padding:0 16px; }
+
+      .hero{ display:grid; gap:12px; margin:12px 0 18px; }
+      .hero .title{ font-size:28px; font-weight:700; letter-spacing:.2px; }
+      .hero .sub{ color:var(--muted); }
+
+      .card{ background:var(--card); border:1px solid var(--glass-brd); border-radius:16px; padding:14px; box-shadow: 0 20px 60px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.06); }
+      .steps{ display:grid; gap:12px; }
+      .step{ display:grid; grid-template-columns: 40px 1fr; gap:10px; align-items:start; padding:12px; background: var(--glass); border:1px solid var(--glass-brd); border-radius:14px; }
+      .badge{ width:32px; height:32px; border-radius:50%; display:grid; place-items:center; font-weight:800; background:var(--accent-700); color:var(--accent); border:1px solid var(--glass-brd); }
+      .step h3{ margin:.2rem 0 .2rem; font-size:16px; }
+      .muted{ color:var(--muted); font-size:13px; }
+
+      .cta-row{ display:flex; flex-wrap:wrap; gap:10px; margin-top:8px; }
+      .btn{ display:inline-flex; align-items:center; gap:8px; padding:10px 12px; border-radius:12px; background:#0f62fe15; color:var(--accent); text-decoration:none; border:1px solid var(--glass-brd); }
+      .btn:active{ transform: translateY(1px); }
+
+      .photo-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 10px;
+        margin-top: 10px;
+      }
+      .photo-slot {
+        width: 100%;
+        aspect-ratio: 9 / 19.5; /* iPhone portrait shape */
+        border-radius: 12px;
+        border: 1px solid var(--glass-brd);
+        background: rgba(255,255,255,.02);
+        overflow: hidden;
+        position: relative;
+      }
+      .photo-slot img,
+      img.photo-slot {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        border-radius: 12px;
+      }
+
+      ol, ul { margin: .25rem 0 .75rem .95rem; }
+
+      .foot{ margin-top:22px; color:var(--muted); font-size:12px; text-align:center; }
+      .note{ padding:10px 12px; border-radius:12px; background: rgba(255,255,255,.06); border:1px solid var(--glass-brd); }
+
+      @media (max-width:700px){ .hero .title{ font-size:24px; } }
+
+      #backLink { color:#ffffff; text-decoration:none; font-size:13px; margin-left:12px; }
+      #backLink:visited { color:#ffffff; }
+      #backLink:hover { text-decoration: underline; }
+
+      /* ===== Modal & Backdrop (desktop only) ===== */
+      body.modal-open{ overflow: hidden; }
+      .overlay{
+        position: fixed;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(8,10,12,.55);
+        backdrop-filter: blur(10px) saturate(1.1);
+        -webkit-backdrop-filter: blur(10px) saturate(1.1);
+        z-index: 50;
+        padding: 24px;
+      }
+      .overlay.show{ display:flex; }
+
+      .modal{
+        width: 100%;
+        max-width: 860px;
+        max-height: min(90vh, 860px);     /* prevent off-screen growth */
+        background: var(--card);
+        border: 1px solid var(--glass-brd);
+        border-radius: 18px;
+        box-shadow: 0 30px 80px rgba(0,0,0,.55);
+        display: flex;
+        flex-direction: column;            /* allow internal scroll area */
+      }
+      .modal header{
+        display:flex; align-items:center; justify-content:space-between; gap:12px;
+        padding:18px; border-bottom:1px solid var(--glass-brd);
+      }
+      .modal h2{ font-size:20px; margin:0; font-weight:750; letter-spacing:.2px; }
+      .modal .content{
+        padding:18px;
+        overflow: auto;                    /* scroll the content, not the page */
+        /* Make scrollbar visible on dark modal backgrounds (Firefox + WebKit) */
+        scrollbar-width: thin; /* Firefox */
+        scrollbar-color: rgba(255,255,255,.12) transparent; /* thumb then track (Firefox) */
+      }
+      /* WebKit browsers (Chrome, Edge, Safari) */
+      .modal .content::-webkit-scrollbar { width: 12px; height: 12px; }
+      .modal .content::-webkit-scrollbar-track { background: transparent; }
+      .modal .content::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,.12);
+        border-radius: 8px;
+        border: 3px solid transparent; /* creates padding around thumb */
+        background-clip: padding-box;
+      }
+  .modal .content::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.2); }
+
+      /* Better button typography & layout */
+      .btn-row{ display:flex; justify-content:center; gap:12px; flex-wrap:wrap; margin:8px 0 6px; }
+      .button{
+        border:1px solid var(--glass-brd);
+        border-radius:14px;
+        padding:12px 16px;
+        font-size:16px;          /* nicer size */
+        font-weight:750;         /* stronger */
+        letter-spacing:.2px;     /* subtle tracking */
+        line-height:1.1;
+        cursor:pointer;
+        background:#0f62fe15;
+        color:var(--accent);
+      }
+      .button.ghost{
+        background:#ffffff12; color:var(--fg);
+      }
+      .button.circle{
+        border-radius:999px; padding:12px 18px;
+      }
+
+      .kbd{
+        background: rgba(255,255,255,.08);
+        border:1px solid var(--glass-brd);
+        padding:.15em .45em; border-radius:6px; font-weight:600;
+      }
+
+      /* Snippet section with sticky, centered copy button */
+      .snippet-section{
+        margin-top:12px;
+        border:1px solid var(--glass-brd);
+        border-radius:14px;
+        overflow:hidden;
+      }
+      .copybar{
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        display:flex;
+        align-items:center;
+        justify-content:center;  /* front and center */
+        gap:10px;
+        padding:12px;
+        background: transparent; /* make the copybar clear */
+        border-bottom: none; /* remove border for a clear look */
+      }
+      .copybtn{
+        border:1px solid var(--glass-brd);
+        background:#0f62fe15;
+        color:var(--accent);
+        padding:12px 16px;
+        border-radius:999px;     /* pill, prominent */
+        font-size:16px;
+        font-weight:800;
+        letter-spacing:.3px;
+        cursor:pointer;
+      }
+      .copyok{ font-size:12px; color:#8be49c; display:none; }
+
+pre.codeblock {
+  background: none !important; /* remove any gray or glass background */
+  color: var(--fg) !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.45;
+  margin: 0;
+  padding: 0;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+      /* Close button */
+      .closebtn{
+        border:1px solid var(--glass-brd);
+        background:#ff5a5a22;
+        color:#ffd6d6;
+      }
+    </style>
+  </head>
+  <body>
+    <div  aria-hidden="true"></div>
+
+    <script id="desktopSnippetSrc" type="text/plain">
+var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",n="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-$",e={};function t(r,o){if(!e[r]){e[r]={};for(var n=0;n<r.length;n++)e[r][r.charAt(n)]=n}return e[r][o]}var i={compressToBase64:function(r){if(null==r)return"";var n=i._compress(r,6,function(r){return o.charAt(r)});switch(n.length%4){default:case 0:return n;case 1:return n+"===";case 2:return n+"==";case 3:return n+"="}},decompressFromBase64:function(r){return null==r?"":""==r?null:i._decompress(r.length,32,function(n){return t(o,r.charAt(n))})},compressToUTF16:function(o){return null==o?"":i._compress(o,15,function(o){return r(o+32)})+" "},decompressFromUTF16:function(r){return null==r?"":""==r?null:i._decompress(r.length,16384,function(o){return r.charCodeAt(o)-32})},compressToUint8Array:function(r){for(var o=i.compress(r),n=new Uint8Array(2*o.length),e=0,t=o.length;e<t;e++){var s=o.charCodeAt(e);n[2*e]=s>>>8,n[2*e+1]=s%256}return n},decompressFromUint8Array:function(o){if(null==o)return i.decompress(o);for(var n=new Array(o.length/2),e=0,t=n.length;e<t;e++)n[e]=256*o[2*e]+o[2*e+1];var s=[];return n.forEach(function(o){s.push(r(o))}),i.decompress(s.join(""))},compressToEncodedURIComponent:function(r){return null==r?"":i._compress(r,6,function(r){return n.charAt(r)})},decompressFromEncodedURIComponent:function(r){return null==r?"":""==r?null:(r=r.replace(/ /g,"+"),i._decompress(r.length,32,function(o){return t(n,r.charAt(o))}))},compress:function(o){return i._compress(o,16,function(o){return r(o)})},_compress:function(r,o,n){if(null==r)return"";var e,t,i,s={},u={},a="",p="",c="",l=2,f=3,h=2,d=[],m=0,v=0;for(i=0;i<r.length;i+=1)if(a=r.charAt(i),Object.prototype.hasOwnProperty.call(s,a)||(s[a]=f++,u[a]=!0),p=c+a,Object.prototype.hasOwnProperty.call(s,p))c=p;else{if(Object.prototype.hasOwnProperty.call(u,c)){if(c.charCodeAt(0)<256){for(e=0;e<h;e++)m<<=1,v==o-1?(v=0,d.push(n(m)),m=0):v++;for(t=c.charCodeAt(0),e=0;e<8;e++)m=m<<1|1&t,v==o-1?(v=0,d.push(n(m)),m=0):v++,t>>=1}else{for(t=1,e=0;e<h;e++)m=m<<1|t,v==o-1?(v=0,d.push(n(m)),m=0):v++,t=0;for(t=c.charCodeAt(0),e=0;e<16;e++)m=m<<1|1&t,v==o-1?(v=0,d.push(n(m)),m=0):v++,t>>=1}0==--l&&(l=Math.pow(2,h),h++),delete u[c]}else for(t=s[c],e=0;e<h;e++)m=m<<1|1&t,v==o-1?(v=0,d.push(n(m)),m=0):v++,t>>=1;0==--l&&(l=Math.pow(2,h),h++),s[p]=f++,c=String(a)}if(""!==c){if(Object.prototype.hasOwnProperty.call(u,c)){if(c.charCodeAt(0)<256){for(e=0;e<h;e++)m<<=1,v==o-1?(v=0,d.push(n(m)),m=0):v++;for(t=c.charCodeAt(0),e=0;e<8;e++)m=m<<1|1&t,v==o-1?(v=0,d.push(n(m)),m=0):v++,t>>=1}else{for(t=1,e=0;e<h;e++)m=m<<1|t,v==o-1?(v=0,d.push(n(m)),m=0):v++,t=0;for(t=c.charCodeAt(0),e=0;e<16;e++)m=m<<1|1&t,v==o-1?(v=0,d.push(n(m)),m=0):v++,t>>=1}0==--l&&(l=Math.pow(2,h),h++),delete u[c]}else for(t=s[c],e=0;e<h;e++)m=m<<1|1&t,v==o-1?(v=0,d.push(n(m)),m=0):v++,t>>=1;0==--l&&(l=Math.pow(2,h),h++)}for(t=2,e=0;e<h;e++)m=m<<1|1&t,v==o-1?(v=0,d.push(n(m)),m=0):v++,t>>=1;for(;;){if(m<<=1,v==o-1){d.push(n(m));break}v++}return d.join("")},decompress:function(r){return null==r?"":""==r?null:i._decompress(r.length,32768,function(o){return r.charCodeAt(o)})},_decompress:function(o,n,e){var t,i,s,u,a,p,c,l=[],f=4,h=4,d=3,m="",v=[],g={val:e(0),position:n,index:1};for(t=0;t<3;t+=1)l[t]=t;for(s=0,a=Math.pow(2,2),p=1;p!=a;)u=g.val&g.position,g.position>>=1,0==g.position&&(g.position=n,g.val=e(g.index++)),s|=(u>0?1:0)*p,p<<=1;switch(s){case 0:for(s=0,a=Math.pow(2,8),p=1;p!=a;)u=g.val&g.position,g.position>>=1,0==g.position&&(g.position=n,g.val=e(g.index++)),s|=(u>0?1:0)*p,p<<=1;c=r(s);break;case 1:for(s=0,a=Math.pow(2,16),p=1;p!=a;)u=g.val&g.position,g.position>>=1,0==g.position&&(g.position=n,g.val=e(g.index++)),s|=(u>0?1:0)*p,p<<=1;c=r(s);break;case 2:return""}for(l[3]=c,i=c,v.push(c);;){if(g.index>o)return"";for(s=0,a=Math.pow(2,d),p=1;p!=a;)u=g.val&g.position,g.position>>=1,0==g.position&&(g.position=n,g.val=e(g.index++)),s|=(u>0?1:0)*p,p<<=1;switch(c=s){case 0:for(s=0,a=Math.pow(2,8),p=1;p!=a;)u=g.val&g.position,g.position>>=1,0==g.position&&(g.position=n,g.val=e(g.index++)),s|=(u>0?1:0)*p,p<<=1;l[h++]=r(s),c=h-1,f--;break;case 1:for(s=0,a=Math.pow(2,16),p=1;p!=a;)u=g.val&g.position,g.position>>=1,0==g.position&&(g.position=n,g.val=e(g.index++)),s|=(u>0?1:0)*p,p<<=1;l[h++]=r(s),c=h-1,f--;break;case 2:return v.join("")}if(0==f&&(f=Math.pow(2,d),d++),l[c])m=l[c];else{if(c!==h)return null;m=i+i.charAt(0)}v.push(m),l[h++]=i+m.charAt(0),i=m,0==--f&&(f=Math.pow(2,d),d++)}}};return i}();"function"==typeof define&&define.amd?define(function(){return LZString}):"undefined"!=typeof module&&null!=module?module.exports=LZString:"undefined"!=typeof angular&&null!=angular&&angular.module("LZString",[]).factory("LZString",function(){return LZString});
+ function waitForElements(selector, {
+  root = document,
+  min = 1,
+  timeoutMs = 30000
+} = {}) {
+  return new Promise((resolve, reject) => {
+    const check = () => {
+      const nodes = Array.from(root.querySelectorAll(selector));
+      if (nodes.length >= min) {
+        observer.disconnect();
+        resolve(nodes);
+      }
+    };
+
+    const observer = new MutationObserver(check);
+    observer.observe(root, { childList: true, subtree: true, attributes: true });
+
+    // initial pass (in case they're already there)
+    check();
+
+    const t = setTimeout(() => {
+      observer.disconnect();
+      reject(new Error(`Timed out waiting for selector: "${selector}"`));
+    }, timeoutMs);
+
+    // Clean up timer on resolve
+    const origResolve = resolve;
+    resolve = (v) => { clearTimeout(t); origResolve(v); };
+  });
+}
+
+function waitForElement(selector, opts = {}) {
+  return waitForElements(selector, { ...opts, min: 1 }).then(nodes => nodes[0]);
+}
+
+function waitForPredicate(predicate, { root = document, timeoutMs = 30000 } = {}) {
+  return new Promise((resolve, reject) => {
+    const check = () => {
+      try {
+        const node = predicate();
+        if (node) {
+          observer.disconnect();
+          clearTimeout(t);
+          resolve(node);
+        }
+      } catch (e) {
+        // ignore predicate errors while DOM settles
+      }
+    };
+
+    const observer = new MutationObserver(check);
+    observer.observe(root, { childList: true, subtree: true, attributes: true });
+
+    // initial pass
+    check();
+
+    const t = setTimeout(() => {
+      observer.disconnect();
+      reject(new Error('Timed out waiting for predicate to return a truthy value.'));
+    }, timeoutMs);
+  });
+}
+
+(async () => {
+  try {
+    let storeId = '543'; // default store ID
+
+    // Grab product anchors
+    const elements = await waitForElements('[data-qe-id="itemRowDetailsName"]', { min: 1, timeoutMs: 30000 });
+
+    // Build an ID -> title map and a list of product IDs (last path segment fallback)
+    const idTitleMap = new Map();
+    const productIds = elements.map(el => {
+      const href = el.href || el.getAttribute('href') || '';
+      const parts = href.split('/').filter(Boolean);
+      const lastPart = parts[parts.length - 1] || null;
+
+      // Prefer numeric ID from element id attribute if present, else fallback to lastPart
+      const id = (el.id && el.id.trim()) || lastPart;
+
+      // Title attribute on the anchor contains the product title we want
+      const title = el.getAttribute('title') || el.textContent?.trim() || null;
+
+      if (id) idTitleMap.set(id, title);
+      return id;
+    }).filter(Boolean);
+
+    console.log('productIds:', productIds);
+
+    // Open reservation modal & change store flow (unchanged)
+    const chooseBtn = await waitForElement('button[data-qe-id="chooseReservationTime"]', { timeoutMs: 30000 });
+    chooseBtn.click();
+
+    const changeStoreBtn = await waitForElement('button[data-testid="fulfillment_change_store"]', { timeoutMs: 30000 });
+    changeStoreBtn.click();
+
+    const span = await waitForPredicate(() => {
+      return Array.from(document.querySelectorAll('span'))
+        .find(el => el.textContent && el.textContent.includes(' Selected Store'));
+    }, { timeoutMs: 30000 });
+
+    const li = span.closest('li');
+    const link = li ? li.querySelector('a[href]') : null;
+    const href = link ? link.href : null;
+
+    if (href) {
+      // split by '-' and get last part
+      storeId = href.split('-').filter(Boolean).pop();
+      console.log('Extracted store ID:', storeId);
+    } else {
+      console.log('No link found inside the selected store <li>.');
+    }
+
+    const closebtn = await waitForElement('button[data-qe-id="modalClose"]', { timeoutMs: 30000 });
+    closebtn.click();
+
+    // Fetch product JSON for each ID and add title field (keeping original shape + title)
+    const allData = await Promise.all(
+      productIds.map(async (id) => {
+        try {
+          const res = await fetch(`https://www.heb.com/pals/v2.0/location/store/${storeId}/products/${id}`, {
+            credentials: "include"
+          });
+          const obj = await res.json();
+          // Preserve original object, just add title
+          return { ...obj, title: idTitleMap.get(id) ?? null };
+        } catch (err) {
+          console.error("Error fetching ID:", id, err);
+          return { id, title: idTitleMap.get(id) ?? null, error: String(err) };
+        }
+      })
+    );
+
+    // Log combined JSON (data + svg), formatted
+    // --- SVG fetch & cleaning (unchanged) ---
+    const url = "https://www.heb.com/atlas/v1.0/image?locationNumber=543&format=svg&style=none&label=false&drawPsas=false&drawAisleMarkers=false&drawCombinedFixtures=true&drawDepartmentLabels=false&hidePartnerFixtures=true";
+    const resp = await fetch(url, { credentials: "include" });
+    if (!resp.ok) throw new Error(`Fetch failed: ${resp.status} ${resp.statusText}`);
+    const svgText = await resp.text();
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(svgText, "image/svg+xml");
+    if (doc.querySelector("parsererror")) {
+      console.error(doc.querySelector("parsererror")?.textContent || "Parser error");
+      throw new Error("Invalid SVG document");
+    }
+
+    let removedCount = 0;
+    doc.querySelectorAll("polygon").forEach(poly => {
+      poly.querySelectorAll("title").forEach(t => {
+        const text = (t.textContent || "").trim().toUpperCase();
+        if (!text.includes("CHECKSTAND MERCHANDISER SELF CHECK OUT")) {
+          t.remove();
+          removedCount++;
+        }
+      });
+    });
+
+    const out = new XMLSerializer().serializeToString(doc);
+    console.log(`Done. Removed ${removedCount} <title> element(s) from polygons.`);
+
+    const combined = { data: allData, svg: out };
+    const jsonText = JSON.stringify(combined, null, 2);
+    console.log("Combined JSON:", jsonText);
+
+    window.open("http://localhost:8000/index.html#{" + LZString.compressToEncodedURIComponent(jsonText) + "}");
+
+  } catch (e) {
+    console.error(e);
+  }
+})();
+
+</script>
+
+
+    <!-- ===== Desktop Modal Overlay ===== -->
+    <div id="overlay" class="overlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-describedby="modalDesc">
+      <div class="modal">
+        <header>
+          <h2 id="modalTitle">Designed for iOS (iPhone/iPad)</h2>
+          <button id="closeModal" class="button ghost circle" aria-label="Close modal">Close</button>
+        </header>
+
+        <div class="content">
+          <p id="modalDesc" class="muted" style="margin:0 0 10px 0;">
+            You’re visiting from a desktop browser. HEBPath works best when you open this page on your iPhone and use the Shortcuts flow below. However, if you really want to use it on desktop, you can. 
+          </p>
+          <p>Copy the code, open Dev Tools with F12, go to the Console tab, paste the code, and press Enter.</p>
+
+          <div class="btn-row">
+            <button id="showSnippetBtn" class="button circle">I know what I'm doing — Continue</button>
+            <a href="#" id="continueOnIOS" class="button ghost circle">Go back to iOS Instructions</a>
+          </div>
+
+          <!-- Snippet appears here -->
+          <section id="snippetSection" class="snippet-section" style="display:none;">
+            <div class="copybar">
+              <button id="copyCode" class="copybtn" type="button">Copy code</button>
+              <span id="copyOk" class="copyok">Copied!</span>
+            </div>
+            <pre class="codeblock"><code id="desktopSnippet" type="text/plain">
+            </code></pre>
+            <script>
+              const srcTag = document.getElementById('desktopSnippetSrc');
+              const codeArea = document.getElementById('desktopSnippet');
+              console.log(srcTag.textContent.trim());
+              codeArea.textContent = srcTag.textContent.trim();
+
+              document.getElementById('desktopSnippetSrc').addEventListener('click', async () => {
+              codeArea.select(); codeArea.setSelectionRange(0, codeArea.value.length);
+              try { await navigator.clipboard.writeText(codeArea.value); } catch { document.execCommand('copy'); }
+              });
+            </script>
+          </section>
+        </div>
+      </div>
+    </div>
+    <!-- ===== /Modal Overlay ===== -->
+
+    <div class="wrap" id="pageContent">
+      <header class="topbar">
+        <h1>HEBPath</h1>
+        <div class="row">
+          <a href="index.html" id="backLink">back</a>
+        </div>
+      </header>
+
+      <main class="container">
+        <section class="hero">
+          <div class="title">Get HEBPath Ready</div>
+          <div class="sub">It seems you <strong>haven't set up HEBPath yet</strong>, or forgot you have to <strong>share your cart to the shortcut</strong>.</div>
+        </section>
+
+        <section class="card">
+          <div class="steps">
+            <!-- Step 1 -->
+            <article class="step" id="step-1">
+              <div class="badge">1</div>
+              <div>
+                <h3>Enable “Allow Running Scripts”</h3>
+                <p class="muted">This lets the app process your cart and compute a route.</p>
+                <ol>
+                  <li>Open the <strong>Settings</strong> app on your iPhone.</li>
+                  <li>Scroll all the way down until you find <strong>Apps</strong>.</li>
+                  <li>Scroll down to the <strong>Shortcuts</strong> app.</li>
+                  <li>Scroll down and tap <strong>Advanced</strong>.</li>
+                  <li>Turn on <strong>Allow Running Scripts</strong>.</li>
+                </ol>
+                <div class="photo-grid">
+                  <img src="./photos/apps.PNG" alt="Settings app list with Apps section" class="photo-slot" />
+                  <img src="./photos/shortcuts.PNG" alt="Shortcuts app settings" class="photo-slot" />
+                  <img src="./photos/advanced.PNG" alt="Advanced settings section" class="photo-slot" />
+                  <img src="./photos/allowscripts.PNG" alt="Allow Running Scripts toggle enabled" class="photo-slot" />
+                </div>
+              </div>
+            </article>
+
+            <!-- Step 2 -->
+            <article class="step" id="step-2">
+              <div class="badge">2</div>
+              <div>
+                <h3>Add the Siri Shortcut</h3>
+                <p class="muted">This shortcut sends your H-E-B cart to HEBPath.</p>
+                <div class="cta-row">
+                  <a class="btn" href="https://www.google.com" aria-label="Shortcut link placeholder">Add Shortcut (placeholder)</a>
+                </div>
+                <p>When you provide the link, it will replace the button above.</p>
+              </div>
+            </article>
+
+            <!-- Step 3 -->
+            <article class="step" id="step-3">
+              <div class="badge">3</div>
+              <div>
+                <h3>Share your H-E-B cart to the shortcut</h3>
+                <ol>
+                  <li>Open your <strong>H-E-B</strong> app and go to your <strong>Cart</strong>.</li>
+                  <li>You may have delivery or the wrong location selected. To change this:</li>
+                  <ol>
+                    <li>Tap <strong>Choose Pickup Time</strong>.</li>
+                    <li>Tap <strong>Change Store</strong>.</li>
+                    <li>Select your preferred store from the list.</li>
+                  </ol>
+                  <li>Tap the <strong>⋯</strong> (three dots) menu.</li>
+                  <li>Tap <strong>Share</strong>.</li>
+                  <li>In the share sheet, scroll down until you see <strong>HEBPath</strong>, then tap it.</li>
+                </ol>
+                <p class="muted">Tip: If you don’t see it, scroll all the way to the bottom and tap <em>Edit Actions…</em> to enable it.</p>
+                <div class="photo-grid">
+                  <img src="./photos/hebphotos/choosepickuptime.PNG" alt="Choose pickup time" class="photo-slot" />
+                  <img src="./photos/hebphotos/changestore.PNG" alt="Change store" class="photo-slot" />
+                  <img src="./photos/hebphotos/selectedstore.PNG" alt="Selected store" class="photo-slot" />
+                  <img src="./photos/hebphotos/threedots.PNG" alt="Cart overflow menu" class="photo-slot" />
+                  <img src="./photos/hebphotos/more.PNG" alt="More share options" class="photo-slot" />
+                  <img src="./photos/hebphotos/sharescreen.PNG" alt="Share sheet with HEBPath" class="photo-slot" />
+                </div>
+              </div>
+            </article>
+          </div>
+          <p class="foot">Questions later? You can always reopen this page by clicking the instructions at the top of the page. To go back click <a href="./index.html">here</a>.</p>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      // Detect iOS (includes iPadOS)
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+      const overlay = document.getElementById('overlay');
+      const bodyEl = document.body;
+      const closeBtn = document.getElementById('closeModal');
+      const showSnippetBtn = document.getElementById('showSnippetBtn');
+      const continueOnIOS = document.getElementById('continueOnIOS');
+      const snippetSection = document.getElementById('snippetSection');
+      const copyBtn = document.getElementById('copyCode');
+      const copyOk = document.getElementById('copyOk');
+      const codeEl = document.getElementById('desktopSnippet');
+
+      function openModal() {
+        overlay.classList.add('show');
+        bodyEl.classList.add('modal-open');
+      }
+      function closeModal() {
+        overlay.classList.remove('show');
+        bodyEl.classList.remove('modal-open');
+      }
+
+      // Auto-open the modal on desktop
+      if (!isIOS) openModal();
+
+      // Button handlers
+      closeBtn.addEventListener('click', closeModal);
+      continueOnIOS.addEventListener('click', (e) => {
+        e.preventDefault();
+        closeModal();
+      });
+      showSnippetBtn.addEventListener('click', () => {
+        snippetSection.style.display = 'block';
+        // keep modal open so they can copy
+      });
+
+      copyBtn.addEventListener('click', async () => {
+        try {
+          const text = codeEl.innerText;
+          await navigator.clipboard.writeText(text);
+          copyOk.style.display = 'inline';
+          setTimeout(() => (copyOk.style.display = 'none'), 1800);
+        } catch {
+          copyOk.textContent = 'Unable to copy — select the code and copy manually.';
+          copyOk.style.display = 'inline';
+        }
+      });
+
+      // Close on backdrop click
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) closeModal();
+      });
+
+      // Escape to close
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && overlay.classList.contains('show')) closeModal();
+      });
+    </script>
+  </body>
+</html>

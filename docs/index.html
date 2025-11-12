@@ -1,0 +1,961 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>HEBPath</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <style>
+      /* ---------------- GLOBAL FIXES ---------------- */
+      *, *::before, *::after { box-sizing: border-box; }
+      html, body { overflow-x: hidden; }
+
+      :root{
+        --bg: #ffffff;
+        --fg: #111111;
+        --muted: #666666;
+        --error: #b00020;
+        --surface: #ffffff;
+        --button-bg: #efefef;
+        --button-fg: var(--fg);
+        --accent: #8ecaff;
+        --accent-700: #003b80;
+        --topbar-h: 56px;
+      }
+      .dark{
+        --bg: #0b0b0d;
+        --fg: #e8eef6;
+        --muted: #a8b0bd;
+        --error: #ff7b7b;
+        --surface: #0f1113;
+        --button-bg: #161719;
+        --button-fg: var(--fg);
+        --accent: #cfe8ff;
+        --accent-700: #001e40;
+      }
+
+      html, body { height: 100%; background: var(--bg); color: var(--fg); }
+      body { font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; }
+      h1 { font-size: 18px; font-weight: 600; margin: 0; }
+      small { color: var(--muted); }
+
+      /* ---------------- APP LAYOUT ---------------- */
+      .app { display: grid; grid-template-rows: auto 1fr auto; height: 100dvh; }
+      .topbar {
+        display: flex; align-items: center; justify-content: space-between;
+        height: var(--topbar-h); padding: 12px 16px;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+        background: var(--surface); position: sticky; top: 0; z-index: 3;
+      }
+
+      .main { position: relative; height: calc(100dvh - var(--topbar-h)); min-height: 0; }
+      .stage {
+        position: relative; width: 100%; height: 100%;
+        background: #000; border-top: 1px solid rgba(255,255,255,0.06);
+        overflow: hidden; touch-action: none;
+      }
+      .stage svg { width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
+      .stage svg:active { cursor: grabbing; }
+      #out { position: absolute; inset: 0; overflow: hidden; touch-action: none; z-index: 0; }
+      #out > svg { position: absolute; inset: 0; z-index: 0; }
+
+      /* ---------------- DESKTOP PANEL ---------------- */
+      .panel-glass {
+        position: absolute; top: 0; right: 0; bottom: 0;
+        width: clamp(300px, 30vw, 460px);
+        display: flex; flex-direction: column;
+        padding: 12px;
+        border-radius: 16px 0 0 16px;
+        border: 1px solid rgba(255,255,255,0.18);
+        background: rgba(16,18,20,0.35);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05);
+        backdrop-filter: blur(16px) saturate(1.2);
+        -webkit-backdrop-filter: blur(16px) saturate(1.2);
+        z-index: 10; overflow: hidden; background-clip: padding-box;
+      }
+      .panel-glass .panel-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px; position: sticky; top: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.18), rgba(0,0,0,0)); border-bottom: 1px solid rgba(255,255,255,0.06); z-index: 1; }
+      .panel-glass h2 { font-size: 14px; opacity: .9; margin: 0; }
+      .panel-glass .steps { list-style: none; padding: 8px 4px; margin: 0; overflow: auto; -webkit-overflow-scrolling: touch; }
+      .panel-glass .step { display: grid; grid-template-columns: 36px 1fr; align-items: start; gap: 8px; padding: 8px 6px; border-radius: 12px; cursor: pointer; }
+      .panel-glass .step:hover { background: rgba(255,255,255,0.06); }
+      .badge { width: 28px; height: 28px; border-radius: 50%; background: var(--accent-700); color: var(--accent); display: grid; place-items: center; font-weight: 700; border: 1px solid rgba(255,255,255,0.15); }
+      .desc { color: var(--fg); font-size: 13px; line-height: 1.35; }
+      .muted { color: var(--muted); font-size: 12px; }
+
+      /* ---------------- ✅ MOBILE FULL-WIDTH PANEL ---------------- */
+      @media (max-width: 700px) {
+        .panel-glass {
+          position: fixed;
+          left: env(safe-area-inset-left);
+          right: env(safe-area-inset-right);
+          bottom: 0; top: auto;
+          width: auto; max-width: 100%;
+          height: clamp(180px, 34vh, 420px);
+          border-radius: 16px 16px 0 0;
+          padding: 10px;
+          padding-left: calc(10px + env(safe-area-inset-left));
+          padding-right: calc(10px + env(safe-area-inset-right));
+          z-index: 999;
+        }
+        .panel-glass .steps { padding: 6px 0; }
+      }
+
+      /* ---------------- MISC ---------------- */
+#status { margin: 8px 16px 0; color: var(--muted); }
+#error  { margin: 8px 16px 0; color: var(--error); white-space: pre-wrap; }
+.console { padding: 12px; }
+textarea { width: 100%; height: 150px; background: var(--surface); color: var(--fg); border: 1px solid rgba(255,255,255,0.08); padding: .5rem; }
+
+/* ===== Pretty gradient background with soft blur ===== */
+.bg-gradient{ position:fixed; inset:0; z-index:-1; pointer-events:none; filter: blur(60px) saturate(1.15); -webkit-filter: blur(60px) saturate(1.15); opacity:.9; background:
+  radial-gradient(1200px 800px at 10% 10%, rgba(100,160,255,.25), transparent 70%),
+  radial-gradient(900px 700px at 90% 20%, rgba(180,120,255,.18), transparent 70%),
+  radial-gradient(900px 700px at 30% 90%, rgba(120,255,200,.15), transparent 70%),
+  linear-gradient(180deg, rgba(10,12,14,1), rgba(10,12,14,.9));
+ animation: bgFloat 26s linear infinite; }
+@keyframes bgFloat{ 0%{background-position:0 0, 0 0, 0 0, 0 0;} 50%{background-position:30px -20px, -40px 35px, 40px -30px, 0 0;} 100%{background-position:0 0, 0 0, 0 0, 0 0;} }
+
+/* ===== Loading overlay ===== */
+.hidden{ display:none !important; }
+.loading-overlay{ position:fixed; inset:0; display:grid; place-items:center; z-index:1000; backdrop-filter: blur(14px) saturate(1.1); -webkit-backdrop-filter: blur(14px) saturate(1.1); background: rgba(10,12,14,0.35); }
+.loading-card{ display:flex; flex-direction:column; align-items:center; gap:12px; padding:20px 22px; border-radius:16px; border:1px solid rgba(255,255,255,.16); background: rgba(16,18,20,.6); box-shadow: 0 20px 60px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.06); }
+.spinner{ width:48px; height:48px; border-radius:50%; background: conic-gradient(from 0turn, rgba(200,220,255,1), rgba(200,220,255,0) 70%); -webkit-mask: radial-gradient(farthest-side, transparent 55%, #000 56%); mask: radial-gradient(farthest-side, transparent 55%, #000 56%); animation: spin 1.1s linear infinite; }
+@keyframes spin{ to{ transform: rotate(1turn); } }
+
+#instrucLink {
+  color: #ffffff; /* red */
+  text-decoration: none;
+  font-size: 13px;
+  margin-left: 12px;
+}
+#instrucLink:visited {
+  color: #ffffff; /* stay red even after visited */
+}
+#instrucLink:hover {
+  text-decoration: underline;
+}
+h1 .heb {
+  color: #ff4b4b; /* red */
+}
+
+h1 .path {
+  color: #ffffff; /* white */
+}
+
+
+
+    </style>
+  </head>
+  <body>
+    <div class="bg-gradient" aria-hidden="true"></div>
+    <div class="app dark" id="appRoot">
+      <div class="topbar">
+        <h1><span class="heb">heb</span><span class="path">path</span></h1>
+
+        <div class="row">
+          <a href="instruc.html" id="instrucLink">instructions</a>
+          <small id="status"></small>
+          
+        </div>
+      </div>
+
+      <div class="main">
+        <div class="stage" id="stage">
+          <div id="out"></div>
+
+          <!-- Floating instructions panel -->
+          <aside class="panel-glass" id="side" aria-label="Instructions panel">
+            <div class="panel-header">
+              <h2>Instructions</h2>
+              <small class="muted">Tap a step to focus</small>
+            </div>
+            <ul class="steps" id="steps" style="overflow:auto; flex:1 1 auto;"></ul>
+          </aside>
+        </div>
+      </div>
+
+      <div id="error"></div>
+
+      <div class="console">
+        <label for="json"><strong>Console Output:</strong></label>
+        <textarea id="json" placeholder="Paste JSON here if clipboard isn’t allowed"></textarea>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
+    <script type="module">
+      import init, { heb_entry } from "./heb_scout.js";
+
+      document.documentElement.classList.add('dark');
+
+      const $ = (id) => document.getElementById(id);
+      const statusEl = $("status");
+      const errEl    = $("error");
+      const stepsEl  = $("steps");
+      const panelEl  = $("side");
+      const stageEl  = $("stage");
+
+      const setStatus = (m) => statusEl.textContent = m ?? "";
+      const setError  = (m) => errEl.textContent = m ?? "";
+
+// Loading overlay helpers
+function setLoading(show, msg){
+  const el = document.getElementById('loader');
+  if(!el) return; 
+  if (typeof msg === 'string') {
+    const t = el.querySelector('.loading-text'); if (t) t.textContent = msg;
+  }
+  if (show) el.classList.remove('hidden'); else el.classList.add('hidden');
+}
+
+      /* ----- overlay orientation detection ----- */
+      const mqlBottom = window.matchMedia("(max-width: 700px)");
+      function applyOverlayOrientation(){
+        if (!panelEl) return;
+        panelEl.dataset.orientation = mqlBottom.matches ? "bottom" : "right";
+      }
+      applyOverlayOrientation();
+      mqlBottom.addEventListener?.("change", applyOverlayOrientation);
+      window.addEventListener("resize", applyOverlayOrientation);
+
+      /* ---------- fragment & cache ---------- */
+      const LS_KEY_FRAGMENT = "heb_scout:fragment";   // compressed fragment string (raw)
+      const LS_KEY_CACHE    = "heb_scout:cache";      // structured cache
+
+      function getFragmentFromUrlOrStorage() {
+        const urlFrag = location.hash ? location.hash.slice(1) : "";
+        if (urlFrag) {
+          try { localStorage.setItem(LS_KEY_FRAGMENT, urlFrag); } catch {}
+          try { history.replaceState(null, "", location.pathname + location.search); } catch {}
+          return urlFrag;
+        }
+        try { return localStorage.getItem(LS_KEY_FRAGMENT) || ""; } catch { return ""; }
+      }
+
+      // Simple deterministic string hash (djb2)
+      function hashStr(str){
+        let h = 5381; for (let i=0;i<str.length;i++){ h = ((h<<5)+h) ^ str.charCodeAt(i); }
+        // return as unsigned 32-bit hex
+        return (h>>>0).toString(16);
+      }
+
+      function loadCache(){
+        try { const raw = localStorage.getItem(LS_KEY_CACHE); return raw ? JSON.parse(raw) : null; }
+        catch { return null; }
+      }
+      function saveCache(obj){
+        try { localStorage.setItem(LS_KEY_CACHE, JSON.stringify(obj)); } catch {}
+      }
+
+      /* ✅ NEW: visible client area outside the panel (for pan/zoom + framing) */
+      function getVisibleClientWH(){
+        const panel = document.getElementById('side');
+        const stage = document.getElementById('stage');
+        if (!stage) return { vw: 1, vh: 1, frac: 0, orient: "right" };
+
+        const sbox = stage.getBoundingClientRect();
+        let vw = Math.max(1, sbox.width);
+        let vh = Math.max(1, sbox.height);
+        let frac = 0;
+        let orient = (panel?.dataset.orientation) || "right";
+
+        if (panel){
+          const pbox = panel.getBoundingClientRect();
+          if (orient === "right"){
+            const hideW = Math.min(pbox.width, sbox.width);
+            vw = Math.max(1, vw - hideW);
+            frac = Math.min(0.95, Math.max(0, hideW / Math.max(1, sbox.width)));
+          } else {
+            const hideH = Math.min(pbox.height, sbox.height);
+            vh = Math.max(1, vh - hideH);
+            frac = Math.min(0.95, Math.max(0, hideH / Math.max(1, sbox.height)));
+          }
+        }
+        return { vw, vh, frac, orient };
+      }
+
+      /* -------- SVG helpers (pan/zoom + mount) -------- */
+      function mountSVG(svgString, { target, id = "output-svg" } = {}) {
+        const doc = new DOMParser().parseFromString(svgString, "image/svg+xml");
+        const err = doc.querySelector("parsererror");
+        if (err) throw new Error("Invalid SVG: " + err.textContent?.trim());
+        const svg = doc.documentElement; svg.id = id;
+        const mounted = document.adoptNode(svg, true);
+        target.replaceChildren(mounted);
+
+        // Ensure numeric viewBox
+        (function ensureNumericViewBox(){
+          let vb = mounted.getAttribute('viewBox');
+          if (!vb) {
+            let box;
+            try { box = mounted.getBBox(); }
+            catch {
+              const r = mounted.getBoundingClientRect();
+              box = { x: 0, y: 0, width: Math.max(1, r.width), height: Math.max(1, r.height) };
+            }
+            if (!box || !isFinite(box.width) || !isFinite(box.height) || !box.width || !box.height) {
+              box = { x: 0, y: 0, width: 1000, height: 1000 };
+            }
+            vb = `${box.x} ${box.y} ${box.width} ${box.height}`;
+            mounted.setAttribute('viewBox', vb);
+          }
+          mounted.dataset.initialVb = vb;
+        })();
+
+        // pan + zoom state
+        let viewBox = { x: 0, y: 0, w: 0, h: 0 };
+        let isPanning = false; 
+        let startPoint = { x: 0, y: 0 }; 
+        let pointStart = { x: 0, y: 0 };
+
+        function getViewBox() {
+          const [x,y,w,h] = mounted.getAttribute('viewBox').split(/[\s,]+/).map(Number);
+          return { x, y, w, h };
+        }
+        function setViewBox(x, y, w, h) { mounted.setAttribute('viewBox', `${x} ${y} ${w} ${h}`); }
+
+        function getVisibleClientSize(mounted){
+          const bbox = mounted.getBoundingClientRect();
+          const panel = panelEl;
+          const stage = stageEl;
+
+          let vw = bbox.width;
+          let vh = bbox.height;
+
+          if (panel && stage){
+            const sbox = stage.getBoundingClientRect();
+            const pbox = panel.getBoundingClientRect();
+            const orient = panel.dataset.orientation || "right";
+
+            if (orient === "right"){
+              const ww = Math.min(pbox.width, sbox.width);
+              vw = Math.max(1, bbox.width - ww);
+            } else {
+              const hh = Math.min(pbox.height, sbox.height);
+              vh = Math.max(1, bbox.height - hh);
+            }
+          }
+          return { vw, vh, bbox };
+        }
+
+        function clientToSvgXY(clientX, clientY) {
+          const { vw, vh, bbox } = getVisibleClientSize(mounted);
+          const v = getViewBox();
+          const relX = (clientX - bbox.left) / Math.max(1, vw);
+          const relY = (clientY - bbox.top)  / Math.max(1, vh);
+          const x = v.x + relX * v.w;
+          const y = v.y + relY * v.h;
+          return { x, y, bbox, v, vw, vh, relX, relY };
+        }
+
+        function getObstruction() {
+          const panel = panelEl, stage = stageEl;
+          if (!panel) return { orient: "right", frac: 0 };
+          const orient = panel.dataset.orientation || "right";
+          const pbox = panel.getBoundingClientRect();
+
+          if (orient === "bottom") {
+            const vh = Math.max(1, window.innerHeight || document.documentElement.clientHeight);
+            const frac = Math.min(0.95, Math.max(0, pbox.height / vh));
+            return { orient: "bottom", frac };
+          } else {
+            const sbox = stage?.getBoundingClientRect();
+            const sw = Math.max(1, sbox?.width || window.innerWidth || 1);
+            const frac = Math.min(0.95, Math.max(0, pbox.width / sw));
+            return { orient: "right", frac };
+          }
+        }
+
+        function handleWheel(event){
+          const panel = panelEl;
+          if (panel){
+            const pbox = panel.getBoundingClientRect();
+            if (
+              event.clientX >= pbox.left && event.clientX <= pbox.right &&
+              event.clientY >= pbox.top  && event.clientY <= pbox.bottom
+            ) {
+              event.preventDefault();
+              return;
+            }
+          }
+          event.preventDefault();
+
+          const {x:svgX,y:svgY,v, relX, relY} = clientToSvgXY(event.clientX, event.clientY);
+
+          const zoomFactor = event.deltaY > 0 ? 1.1 : 0.9;
+          let newW = v.w * zoomFactor, newH = v.h * zoomFactor;
+
+          let newX = svgX - relX * newW; 
+          let newY = svgY - relY * newH;
+
+          const { orient, frac } = getObstruction();
+          if (frac > 0) {
+            if (orient === "right") {
+              const visibleRight = newX + newW * (1 - frac);
+              const currentVisibleRight = v.x + v.w * (1 - frac);
+              if (visibleRight < currentVisibleRight) {
+                const delta = currentVisibleRight - visibleRight;
+                newX -= delta;
+              }
+            } else {
+              const visibleBottom = newY + newH * (1 - frac);
+              const currentVisibleBottom = v.y + v.h * (1 - frac);
+              if (visibleBottom < currentVisibleBottom) {
+                const delta = currentVisibleBottom - visibleBottom;
+                newY -= delta;
+              }
+            }
+          }
+          setViewBox(newX, newY, newW, newH);
+        }
+
+        function startPan(e){ 
+          isPanning = true; 
+          mounted.style.cursor='grabbing'; 
+          const { bbox } = getVisibleClientSize(mounted);
+          startPoint = {x:e.clientX - bbox.left, y:e.clientY - bbox.top}; 
+          viewBox=getViewBox(); 
+          pointStart={x:viewBox.x,y:viewBox.y}; 
+        }
+        function movePan(e){ 
+          if(!isPanning) return; 
+          const { vw, vh, bbox } = getVisibleClientSize(mounted);
+          const pt={x:e.clientX-bbox.left,y:e.clientY-bbox.top}; 
+          const dx=(pt.x-startPoint.x)*(viewBox.w/Math.max(1, vw));
+          const dy=(pt.y-startPoint.y)*(viewBox.h/Math.max(1, vh));
+          setViewBox(pointStart.x-dx, pointStart.y-dy, viewBox.w, viewBox.h); 
+        }
+        function endPan(){ isPanning=false; mounted.style.cursor='grab'; }
+
+        let pinch = { active: false, startDist: 0, startVB: null, startCenterSvg: {x:0,y:0} };
+        function distance(p1, p2){ const dx = p1.clientX - p2.clientX; const dy = p1.clientY - p2.clientY; return Math.hypot(dx, dy); }
+        function midpoint(p1, p2){ return { clientX: (p1.clientX + p2.clientX)/2, clientY: (p1.clientY + p2.clientY)/2 }; }
+
+        function onTouchStart(ev){
+          ev.preventDefault();
+          if (ev.touches.length === 1) {
+            const t = ev.touches[0];
+            const { bbox } = getVisibleClientSize(mounted);
+            startPoint = { x: t.clientX - bbox.left, y: t.clientY - bbox.top };
+            viewBox = getViewBox();
+            pointStart = { x: viewBox.x, y: viewBox.y };
+            isPanning = true;
+          } else if (ev.touches.length === 2) {
+            isPanning = false;
+            pinch.active = true;
+            pinch.startDist = distance(ev.touches[0], ev.touches[1]);
+            pinch.startVB = getViewBox();
+            const mid = midpoint(ev.touches[0], ev.touches[1]);
+            const c = clientToSvgXY(mid.clientX, mid.clientY);
+            pinch.startCenterSvg = { x: c.x, y: c.y };
+          }
+        }
+        function onTouchMove(ev){
+          if (!ev.touches.length) return;
+          ev.preventDefault();
+          if (pinch.active && ev.touches.length === 2) {
+            const curDist = distance(ev.touches[0], ev.touches[1]) || 1;
+            const scale = pinch.startDist / curDist;
+            const newW = pinch.startVB.w * scale;
+            const newH = pinch.startVB.h * scale;
+            const newX = pinch.startCenterSvg.x - newW/2;
+            const newY = pinch.startCenterSvg.y - newH/2;
+            setViewBox(newX, newY, newW, newH);
+            return;
+          }
+          if (isPanning && ev.touches.length === 1) {
+            const t = ev.touches[0];
+            const { vw, vh, bbox } = getVisibleClientSize(mounted);
+            const pt = { x: t.clientX - bbox.left, y: t.clientY - bbox.top };
+            const dx=(pt.x-startPoint.x)*(viewBox.w/Math.max(1, vw));
+            const dy=(pt.y-startPoint.y)*(viewBox.h/Math.max(1, vh));
+            setViewBox(pointStart.x-dx, pointStart.y-dy, viewBox.w, viewBox.h);
+          }
+        }
+        function onTouchEnd(ev){ if (ev.touches.length === 0) { isPanning = false; pinch.active = false; } if (ev.touches.length === 1)  { pinch.active = false; } }
+
+        mounted.addEventListener('wheel', handleWheel, { passive: false });
+        mounted.addEventListener('mousedown', startPan);
+        mounted.addEventListener('mousemove', movePan);
+        mounted.addEventListener('mouseup', endPan);
+        mounted.addEventListener('mouseleave', endPan);
+        mounted.addEventListener('touchstart', onTouchStart, { passive: false });
+        mounted.addEventListener('touchmove',  onTouchMove,  { passive: false });
+        mounted.addEventListener('touchend',   onTouchEnd,   { passive: false });
+        mounted.addEventListener('touchcancel',onTouchEnd,   { passive: false });
+
+        return mounted;
+      }
+
+      function recolorMountedSVG(){
+        try{
+          const mounted = document.getElementById('output-svg'); if(!mounted) return;
+          const rects = Array.from(mounted.querySelectorAll('rect'));
+          let bgFound = false; 
+          rects.forEach(r=>{
+            const fill=(r.getAttribute('fill')||'').toLowerCase();
+            if(!fill) return;
+            if(fill.includes('255')||fill.includes('#fff')||fill.includes('white')){
+              r.setAttribute('fill','#000'); bgFound=true;
+            }
+          });
+          if(!bgFound){
+            const vb = mounted.getAttribute('viewBox'); 
+            let x=0,y=0,w='100%',h='100%'; 
+            if(vb){
+              const p=vb.split(/[\s,]+/).map(Number);
+              if(p.length===4){ x=p[0];y=p[1];w=p[2];h=p[3]; }
+            }
+            const NS='http://www.w3.org/2000/svg'; 
+            const bg=document.createElementNS(NS,'rect'); 
+            bg.setAttribute('x',x); bg.setAttribute('y',y); 
+            bg.setAttribute('width',w); bg.setAttribute('height',h); 
+            bg.setAttribute('fill','#000'); 
+            mounted.insertBefore(bg, mounted.firstChild);
+          }
+          const polys = mounted.querySelectorAll('polygon, polyline'); 
+          polys.forEach(p=>{
+            p.setAttribute('fill','#808080'); 
+            if(p.hasAttribute('stroke')) p.setAttribute('stroke','#666');
+          });
+          mounted.querySelectorAll('path').forEach(p=>{
+            const f=p.getAttribute('fill'); 
+            if(f && f.toLowerCase()!=='none') p.setAttribute('fill','#808080');
+          });
+          mounted.querySelectorAll('[style]').forEach(el=>{
+            const s=el.getAttribute('style')||''; 
+            if(/background\s*:\s*rgb\(255,\s*255,\s*255\)/i.test(s)||/background\s*:\s*#fff/i.test(s))
+              el.setAttribute('style', s.replace(/background\s*:\s*[^;]+;?/i, ''));
+          });
+        }catch(e){ console.warn('recolorMountedSVG failed', e); }
+      }
+
+      function framePoints(svg, points, padding=0.12){
+        if(!points.length) return;
+        const xs = points.map(p=>p[0]);
+        const ys = points.map(p=>p[1]);
+        const minX = Math.min(...xs), maxX = Math.max(...xs);
+        const minY = Math.min(...ys), maxY = Math.max(...ys);
+
+        const w = Math.max(1e-6, maxX - minX);
+        const h = Math.max(1e-6, maxY - minY);
+        const padX = w * padding; 
+        const padY = h * padding;
+
+        let neededW = Math.max(w + 2*padX, 20);
+        let neededH = Math.max(h + 2*padY, 20);
+
+        let cx = (minX + maxX)/2 - neededW/2;
+        let cy = (minY + maxY)/2 - neededH/2;
+
+        const { vw, vh, frac, orient } = getVisibleClientWH();
+        const visAR = vw / vh;
+
+        let viewW = neededW;
+        let viewH = neededH;
+
+        const neededAR = neededW / neededH;
+        if (Math.abs(neededAR - visAR) > 1e-6){
+          if (neededAR < visAR){
+            const newW = neededH * visAR;
+            const grow = newW - viewW;
+            viewW = newW;
+            cx -= grow/2;
+          } else {
+            const newH = neededW / visAR;
+            const grow = newH - viewH;
+            viewH = newH;
+            cy -= grow/2;
+          }
+        }
+
+        if (frac > 0){
+          if (orient === "right"){
+            const visibleFracW = Math.max(1e-6, 1 - frac);
+            const visLeft  = cx;
+            const visRight = cx + viewW * visibleFracW;
+            const needRight = maxX + padX;
+            if (visRight < needRight){
+              const delta = needRight - visRight;
+              cx += delta;
+            }
+            const needLeft = minX - padX;
+            if (visLeft > needLeft){ cx = needLeft; }
+          } else {
+            const visibleFracH = Math.max(1e-6, 1 - frac);
+            const visTop    = cy;
+            const visBottom = cy + viewH * visibleFracH;
+            const needBottom = maxY + padY;
+            if (visBottom < needBottom){
+              const delta = needBottom - visBottom;
+              cy += delta;
+            }
+            const needTop = minY - padY;
+            if (visTop > needTop){ cy = needTop; }
+          }
+        } else {
+          cx = Math.min(cx, minX - padX);
+          cy = Math.min(cy, minY - padY);
+        }
+
+        svg.setAttribute('viewBox', `${cx} ${cy} ${viewW} ${viewH}`);
+      }
+
+      /* -------- WASM pipeline + UI helpers -------- */
+      function buildProductInfo(payload){
+        const productInfo = {};
+        if (payload && Array.isArray(payload.data)) {
+          payload.data.forEach(block => {
+            if (!block || !Array.isArray(block.results)) return;
+            const blockTitle = (block.title ?? '').trim();
+            block.results.forEach(r => {
+              const pid = (r && (r.productId || r.product_id)) || 0;
+              if (!pid) return;
+              let subtitle = '';
+              if (r?.psas?.[0]?.locationDescription) subtitle = r.psas[0].locationDescription;
+              else if (r?.approximateLocation?.locationDescription) subtitle = r.approximateLocation.locationDescription;
+              else if (r?.locationDescription) subtitle = r.locationDescription;
+              const fallbackName = r?.name || r?.productName || r?.description || '';
+              const title = blockTitle || fallbackName;
+              productInfo[pid] = { title: title || '', subtitle: subtitle || '' };
+            });
+          });
+        }
+        productInfo[1] = { title: 'Entrance',       subtitle: '' };
+        productInfo[2] = { title: 'Checkout Area',  subtitle: '' };
+        return productInfo;
+      }
+
+      function renderSteps(waypoints){
+        stepsEl.replaceChildren();
+        waypoints.forEach((wp, wi) => {
+          const li = document.createElement('li'); 
+          li.className = 'step'; 
+          li.dataset.wi = wi;
+          li.innerHTML = `
+            <div class="badge">${wp.n}</div>
+            <div>
+              <div class="desc" style="font-weight:600;">${wp.title || ''}</div>
+              <div class="muted">${wp.subtitle || ''}</div>
+            </div>`;
+          stepsEl.appendChild(li);
+        });
+      }
+
+      function hookStepClicks(svg, waypoints, pts, toSvg){
+        stepsEl.addEventListener('click', (e)=>{
+          const li = e.target.closest('.step'); if(!li) return;
+          const wi = Number(li.dataset.wi);
+          const pair = computePairIndices(wi, waypoints.length);
+          const svgPts = pair.map(i=>{
+            const p = pts[waypoints[i].index];
+            const [sx,sy] = toSvg(p[0], p[1]);
+            return [sx,sy];
+          });
+          framePoints(svg, svgPts, 0.15);
+        });
+      }
+// NEW: absolute-coords click handler for cached restores
+function hookStepClicksAbs(svg, waypoints){
+  stepsEl.onclick = (e)=>{
+    const li = e.target.closest('.step'); if(!li) return;
+    const wi = Number(li.dataset.wi);
+    const pair = computePairIndices(wi, waypoints.length);
+    const pts = pair.map(i=>[ waypoints[i].cx, waypoints[i].cy ]);
+    framePoints(svg, pts, 0.15);
+  };
+}
+
+function computePairIndices(wi, len){ if (len <= 1) return [0]; if (wi >= 0 && wi < len - 1) return [wi, wi + 1]; return [len - 1, 0]; }
+
+      function validateLooksLikeJson(text){ try{ JSON.parse(text); return true; }catch{ return false; } }
+      async function runWithData(jsonText) {
+        setError("");
+        try {
+          if (!validateLooksLikeJson(jsonText)) throw new Error("Clipboard/textarea does not contain valid JSON.");
+          return heb_entry(jsonText);
+        } catch (e) { console.error(e); setError(String(e)); setStatus(""); }
+      }
+
+      /* ✅ NEW: draw overlay using cached structures (no WASM required) */
+      function drawOverlayFromCache(svg, cache){
+        const NS = 'http://www.w3.org/2000/svg';
+        const g = document.createElementNS(NS,'g'); 
+        g.setAttribute('pointer-events','none');
+
+        // draw route polyline if present
+        if (cache.polyline) {
+          const poly = document.createElementNS(NS,'polyline');
+          poly.setAttribute('points', cache.polyline_points_svg.join(' '));
+          poly.setAttribute('fill','none');
+          poly.setAttribute('stroke','lightblue');
+          poly.setAttribute('stroke-width','1');
+          poly.setAttribute('vector-effect','non-scaling-stroke');
+          g.appendChild(poly);
+        }
+
+        // numbered waypoints
+        (cache.waypoints || []).forEach(wp => {
+          const c = document.createElementNS(NS,'circle');
+          c.setAttribute('cx', wp.cx);
+          c.setAttribute('cy', wp.cy);
+          c.setAttribute('r','15');
+          c.setAttribute('fill','#00008B');
+          c.setAttribute('vector-effect','non-scaling-stroke');
+
+          const t = document.createElementNS(NS,'text');
+          t.setAttribute('x', wp.cx);
+          t.setAttribute('y', wp.cy);
+          t.setAttribute('fill','#ADD8E6');
+          t.setAttribute('text-anchor','middle');
+          t.setAttribute('dominant-baseline','central');
+          t.setAttribute('font-size','14');
+          t.setAttribute('font-weight','bold');
+          t.setAttribute('vector-effect','non-scaling-stroke');
+          t.textContent = String(wp.n);
+
+          if (wp.tipText){
+            const tip = document.createElementNS(NS,'title');
+            tip.textContent = wp.tipText;
+            c.appendChild(tip);
+          }
+
+          g.appendChild(c); g.appendChild(t);
+        });
+
+        svg.appendChild(g);
+
+        // Default framing
+        if ((cache.waypoints || []).length){
+          const pair = computePairIndices(0, cache.waypoints.length);
+          const pts = pair.map(i => [cache.waypoints[i].cx, cache.waypoints[i].cy]);
+          framePoints(svg, pts, 0.15);
+        }
+      }
+
+      async function main(){
+        const SETUP_URL = "./instruc.html";
+        try { history.scrollRestoration = 'manual'; } catch {}
+        if (location.hash) window.scrollTo(0, 0);
+
+        setStatus("Loading wasm…");
+        await init();
+        setStatus("Ready.");
+
+        setStatus("Checking URL fragment or saved cache…");
+        const rawFrag = getFragmentFromUrlOrStorage();
+        const cache   = loadCache();
+
+        // If no fragment, try to restore entire view from cache
+        if (!rawFrag) {
+          if (cache && cache.svg) {
+            setStatus("No fragment. Restoring from saved cache…");
+            const svg = mountSVG(cache.svg, { target: document.getElementById("out"), id: "output-svg" });
+            recolorMountedSVG();
+            // Ensure viewBox baseline is the original, so click-zoom math uses stable coords
+            if (cache.initialVb) svg.setAttribute('viewBox', cache.initialVb);
+            drawOverlayFromCache(svg, cache);
+            renderSteps(cache.stepList || []);
+            // step click handling needs raw pts & mapping function
+            // build toSvg based on viewBox origin captured in cache
+            const vbBase = (cache.initialVb || svg.dataset.initialVb || svg.getAttribute('viewBox') || '0 0 1000 1000');
+            const [ix,iy] = vbBase.split(/[\s,]+/).map(Number);
+            const toSvg = (x,y)=>[ix + x, iy + y];
+            hookStepClicksAbs(svg, cache.waypoints || []);
+            setStatus("Restored.");
+            return;
+          }
+          try { localStorage.removeItem(LS_KEY_FRAGMENT); } catch {}
+          try { localStorage.removeItem(LS_KEY_CACHE); } catch {}
+          location.replace(SETUP_URL);
+          setError("No data found in URL fragment or cache.");
+          setStatus("");
+          return;
+        }
+
+        // We have a fragment: decode and compute its hash
+        setStatus("Decoding url fragment…");
+        const decoded = decodeURIComponent(rawFrag);
+        const trimmed = decoded.length >= 2 ? decoded.slice(1, -1) : decoded; // your existing normalization
+        const fragHash = hashStr(trimmed);
+
+        // If cache matches, short-circuit
+        if (cache && cache.fragmentHash === fragHash && cache.svg) {
+          setStatus("Fragment unchanged. Loading from cache…");
+          const svg = mountSVG(cache.svg, { target: document.getElementById("out"), id: "output-svg" });
+          recolorMountedSVG();
+// Reset to the original viewBox before any framing
+if (cache.initialVb) svg.setAttribute('viewBox', cache.initialVb);
+drawOverlayFromCache(svg, cache);
+          renderSteps(cache.stepList || []);
+          const vbBase = (cache.initialVb || svg.dataset.initialVb || svg.getAttribute('viewBox') || '0 0 1000 1000');
+const [ix,iy] = vbBase.split(/[\s,]+/).map(Number);
+const toSvg = (x,y)=>[ix + x, iy + y];
+          hookStepClicksAbs(svg, cache.waypoints || []);
+          setLoading(false);
+setStatus("Done.");
+          return;
+        }
+
+        // Else, decompress + run WASM and then build & save cache
+        setStatus("Found fragment, decompressing…");
+        const json = LZString.decompressFromEncodedURIComponent(trimmed);
+        if(!json){ setError("Failed to decode payload from URL or storage."); setStatus(""); return; }
+
+        const payload = JSON.parse(json);
+        const svg_data = payload["svg"];
+        if (!svg_data) { setError("Payload missing 'svg' field."); setStatus(""); return; }
+
+        // Mount SVG first so measurement APIs work
+        const svg = mountSVG(svg_data, { target: document.getElementById("out"), id: "output-svg" });
+        recolorMountedSVG();
+
+        // Run WASM
+        setStatus("Running in wasm…");
+setLoading(true, "Computing the path…");
+        const dataRaw = await runWithData(json);
+        if (!dataRaw) { setError("WASM returned no data."); setStatus(""); return; }
+        let data; try { data = JSON.parse(dataRaw); } catch { setError("WASM returned invalid JSON."); setStatus(""); return; }
+
+        const polyline = data["polyline"]; 
+        const item_mask = data["mask"]; // kept for completeness
+        if(!polyline){ setStatus("No polyline data received."); return; } 
+        else { setStatus("Path found."); }
+
+        // Utilities to map points into SVG space
+        const vb = svg.getAttribute('viewBox'); 
+        if(!vb) throw new Error('SVG has no viewBox');
+        const [minX,minY] = vb.split(/[\s,]+/).map(Number);
+        const toSvg = (x,y)=>[minX + x, minY + y];
+
+        // Parse the polyline into numeric points once
+        const pts = polyline
+          .replace(/[\[\]]/g,'')
+          .split(/[\s,]+/)
+          .filter(Boolean)
+          .reduce((acc,val,i,arr)=>{ if(i%2===0) acc.push([Number(val), Number(arr[i+1])]); return acc; },[]);
+
+        // Build step metadata from product info
+        const productInfo = buildProductInfo(payload);
+
+        // Draw overlays + construct waypoints
+        const NS = 'http://www.w3.org/2000/svg';
+        const g = document.createElementNS(NS,'g');
+        g.setAttribute('pointer-events','none');
+
+        const poly = document.createElementNS(NS,'polyline');
+        const polyline_points_svg = pts.map(([x,y])=>{ const [sx,sy]=toSvg(x,y); return `${sx},${sy}`; });
+        poly.setAttribute('points', polyline_points_svg.join(' '));
+        poly.setAttribute('fill','none');
+        poly.setAttribute('stroke','lightblue');
+        poly.setAttribute('stroke-width','1');
+        poly.setAttribute('vector-effect','non-scaling-stroke');
+        g.appendChild(poly);
+
+        const firstSeen = new Map();
+        let counter=1; 
+        const waypoints=[];    // for UI rendering
+        const stepList=[];     // for side panel
+
+        pts.forEach(([x,y], idx)=>{
+          const pid = Number(item_mask?.[idx]||0);
+          if(!pid) return;
+          if(firstSeen.has(pid)) return;
+          firstSeen.set(pid, idx);
+
+          const [sx,sy] = toSvg(x,y);
+          const c = document.createElementNS(NS,'circle');
+          c.setAttribute('cx',sx); c.setAttribute('cy',sy); c.setAttribute('r','15');
+          c.setAttribute('fill','#00008B'); c.setAttribute('vector-effect','non-scaling-stroke');
+
+          const t = document.createElementNS(NS,'text');
+          t.setAttribute('x',sx); t.setAttribute('y',sy); t.setAttribute('fill','#ADD8E6');
+          t.setAttribute('text-anchor','middle'); t.setAttribute('dominant-baseline','central');
+          t.setAttribute('font-size','14'); t.setAttribute('font-weight','bold');
+          t.setAttribute('vector-effect','non-scaling-stroke'); t.textContent=String(counter);
+
+          const info = productInfo[pid] || { title: '', subtitle: '' };
+          const tip = document.createElementNS(NS,'title');
+          const tipTitle = info.title ? `${info.title}` : '';
+          const tipSub   = info.subtitle ? ` — ${info.subtitle}` : '';
+          const tipText = `${counter}. ${tipTitle}${tipSub}`;
+          tip.textContent = tipText;
+          c.appendChild(tip);
+
+          g.appendChild(c); g.appendChild(t);
+
+          waypoints.push({ n: counter, pid, cx: sx, cy: sy, tipText });
+          stepList.push({ n: counter, pid, title: info.title || '', subtitle: info.subtitle || '', index: idx });
+          counter++;
+        });
+        svg.appendChild(g);
+
+        renderSteps(stepList);
+        hookStepClicks(svg, stepList, pts, toSvg);
+
+        // Default framing
+        if(stepList.length){
+          const pairIdx = computePairIndices(0, stepList.length);
+          const svgPts = pairIdx.map(i=>{
+            const p = pts[stepList[i].index];
+            return toSvg(p[0], p[1]);
+          });
+          framePoints(svg, svgPts, 0.15);
+        }
+
+        // ✅ SAVE structured cache so we can restore without recompute
+        const cacheObj = {
+          fragmentHash: fragHash,
+          initialVb: svg.getAttribute('viewBox'),
+          svg: svg_data,
+          polyline: polyline,                      // raw polyline string (optional)
+          polyline_points_svg,                     // precomputed "x,y" strings to avoid re-map
+          pts,                                     // raw numeric points in local coords
+          mask: item_mask || [],
+          waypoints,                               // for drawing (cx,cy,n,…)
+          stepList,                                // for sidebar & clicks
+          productInfo                               // may be useful to show additional info later
+        };
+        saveCache(cacheObj);
+
+        console.log({ restored: false, pts_length: pts.length, steps: stepList.length });
+        setLoading(false);
+setStatus("Done.");
+      }
+
+      main();
+
+      // Error piping to the textarea console
+      window.onerror = function(message, source, lineno, colno, error) {
+        // Always hide loader on any uncaught error
+        try { setLoading(false); } catch {}
+
+        const errorMessage = `Error: ${message}\nSource: ${source}\nLine: ${lineno}, Column: ${colno}\nStack: ${error ? error.stack : 'N/A'}\n\n`;
+        const el = document.getElementById("json");
+        if (el) el.value += errorMessage;
+        return true;
+      };
+      (function hijackConsole(){
+        const orig = window.console.log;
+        window.console.log = function(...args){
+          orig.apply(console, args);
+          const textarea = document.getElementById('json');
+          if(textarea){
+            const logMessage = args.map(arg => {
+              try { return typeof arg === 'object' && arg !== null ? JSON.stringify(arg) : String(arg); }
+              catch { return String(arg); }
+            }).join(' ');
+            textarea.value += logMessage + '\n';
+          }
+        };
+      })();
+    </script>
+
+    <div id="loader" class="loading-overlay hidden" aria-live="polite" aria-busy="true">
+      <div class="loading-card">
+        <div class="spinner" aria-hidden="true"></div>
+        <div class="loading-text">Computing path…</div>
+        <small class="muted">Optimizing route across aisles</small>
+      </div>
+    </div>
+  </body>
+</html>
