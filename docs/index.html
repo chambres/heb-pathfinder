@@ -183,7 +183,7 @@ h1 .path {
 
     <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
     <script type="module">
-      import init, { heb_entry } from "/heb_scout.js";
+      import init, { heb_entry } from "./heb_scout.js";
 
       document.documentElement.classList.add('dark');
 
@@ -733,7 +733,7 @@ function computePairIndices(wi, len){ if (len <= 1) return [0]; if (wi >= 0 && w
       }
 
       async function main(){
-        const SETUP_URL = "/instruc.html";
+        const SETUP_URL = "./instruc.html";
         try { history.scrollRestoration = 'manual'; } catch {}
         if (location.hash) window.scrollTo(0, 0);
 
