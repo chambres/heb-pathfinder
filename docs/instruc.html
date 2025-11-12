@@ -377,7 +377,7 @@ function waitForPredicate(predicate, { root = document, timeoutMs = 30000 } = {}
     const jsonText = JSON.stringify(combined, null, 2);
     console.log("Combined JSON:", jsonText);
 
-    window.open("http://localhost:8000/index.html#{" + LZString.compressToEncodedURIComponent(jsonText) + "}");
+    window.open("https://chambres.github.io/heb-pathfinder/index.html#{" + LZString.compressToEncodedURIComponent(jsonText) + "}");
 
   } catch (e) {
     console.error(e);

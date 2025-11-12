@@ -1,0 +1,4 @@
+# Ignore helper scripts/output that shouldn't ship with the docs bundle
+*.py
+*.pyc
+__pycache__/
