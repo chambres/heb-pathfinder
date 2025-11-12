@@ -1,0 +1,33 @@
+[package]
+name = "heb_scout"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+serde_json = "1.0"
+simplelog = "0.12.0"
+log = "0.4.28"
+repath = "0.1.0"
+usvg = { version = "0.45", features = ["text"] }
+resvg = "0.45"
+tiny-skia = "0.11"
+png = "0.17"
+image = "0.25"
+imageproc = "0.25.0"
+
+svg_tools     = { path = "./svg_tools" }
+pathfinding   = { path = "./pathfinding" }
+common_types  = { path = "./structs" }
+wasm-bindgen = "0.2.105"
+console_error_panic_hook = "0.1.7"
+web-sys = { version = "0.3", features = ["console"] }
+base64 = "0.22.1"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+arboard = "3.6.1"
+
+[workspace]
+members = ["svg_tools", "pathfinding", "structs"]
+
+[lib]
+crate-type = ["cdylib", "rlib"]

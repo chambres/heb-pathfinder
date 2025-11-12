@@ -1,0 +1,3 @@
+things in bottom left corner are area == 16
+
+checking out, entrance and exit, ice, etc is area=15

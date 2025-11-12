@@ -1,0 +1,14 @@
+#ignore python and go folders
+python/
+go/
+# ignore compiled rust files
+/pkg/*.wasm
+/pkg/*.js
+/pkg/*.html
+
+/target
+# ignore vscode settings
+.vscode/
+pycache/
+__pycache__/
+
