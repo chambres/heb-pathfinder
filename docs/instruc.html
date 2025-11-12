@@ -378,7 +378,7 @@ function waitForPredicate(predicate, { root = document, timeoutMs = 30000 } = {}
     const jsonText = JSON.stringify(combined, null, 2);
     console.log("Combined JSON:", jsonText);
 
-    window.open("https://chambres.github.io/heb-pathfinder/index.html#{" + LZString.compressToEncodedURIComponent(jsonText) + "}");
+    window.open("https://rhl.sh/heb/index.html#{" + LZString.compressToEncodedURIComponent(jsonText) + "}");
 
   } catch (e) {
     console.error(e);
@@ -436,7 +436,7 @@ function waitForPredicate(predicate, { root = document, timeoutMs = 30000 } = {}
       <header class="topbar">
         <h1>HEBPath</h1>
         <div class="row">
-          <a href="index.html" id="backLink">back</a>
+          <a href="/index.html" id="backLink">back</a>
         </div>
       </header>
 
@@ -512,7 +512,7 @@ function waitForPredicate(predicate, { root = document, timeoutMs = 30000 } = {}
               </div>
             </article>
           </div>
-          <p class="foot">Questions later? You can always reopen this page by clicking the instructions at the top of the page. To go back click <a href="./index.html">here</a>.</p>
+          <p class="foot">Questions later? You can always reopen this page by clicking the instructions at the top of the page. To go back click <a href="/index.html">here</a>.</p>
         </section>
       </main>
     </div>
