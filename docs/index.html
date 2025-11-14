@@ -181,6 +181,28 @@ h1 .path {
       </div>
     </div>
 
+      <script>
+        (function () {
+          var base = document.createElement('base');
+          var path = window.location.pathname;
+
+          // Treat the current path as a "directory"
+          // "/"      -> "/"
+          // "/heb"   -> "/heb/"
+          // "/heb/"  -> "/heb/"
+          // "/heb-pathfinder/" -> "/heb-pathfinder/"
+          if (path === "" || path === "/") {
+            base.href = "/";
+          } else if (path.endsWith("/")) {
+            base.href = path;
+          } else {
+            base.href = path + "/";
+          }
+
+          document.head.appendChild(base);
+        })();
+      </script>
+
     <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
     <script type="module">
       import init, { heb_entry } from "./heb_scout.js";
