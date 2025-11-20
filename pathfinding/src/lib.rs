@@ -437,7 +437,7 @@ pub fn run_multi_route_render_from_png_bytes(
         paths[i][i] = Some(vec![waypoints[i]]);
     }
 
-    let mut order: Vec<usize>;
+    let order: Vec<usize>;
     let has_fixed = !make_cycle
         && product_ids.iter().any(|&p| p == 1)
         && product_ids.iter().any(|&p| p == 2);
