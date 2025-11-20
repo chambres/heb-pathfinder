@@ -42,6 +42,14 @@
       .btn{ display:inline-flex; align-items:center; gap:8px; padding:10px 12px; border-radius:12px; background:#0f62fe15; color:var(--accent); text-decoration:none; border:1px solid var(--glass-brd); }
       .btn:active{ transform: translateY(1px); }
 
+      h1 .heb {
+        color: #ff4b4b; /* red */
+      }
+
+      h1 .path {
+        color: #ffffff; /* white */
+      }
+
       .photo-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -377,7 +385,7 @@ function waitForPredicate(predicate, { root = document, timeoutMs = 30000 } = {}
     const jsonText = JSON.stringify(combined, null, 2);
     console.log("Combined JSON:", jsonText);
 
-    window.open("https://rhl.sh/heb/index.html#{" + LZString.compressToEncodedURIComponent(jsonText) + "}");
+    window.open("https://rhl.sh/heb#{" + LZString.compressToEncodedURIComponent(jsonText) + "}");
 
   } catch (e) {
     console.error(e);
@@ -433,7 +441,7 @@ function waitForPredicate(predicate, { root = document, timeoutMs = 30000 } = {}
 
     <div class="wrap" id="pageContent">
       <header class="topbar">
-        <h1>HEBPath</h1>
+        <h1><span class="heb">heb</span><span class="path">path</span></h1>
         <div class="row">
           <a href="./" id="backLink">back</a>
         </div>
@@ -476,9 +484,8 @@ function waitForPredicate(predicate, { root = document, timeoutMs = 30000 } = {}
                 <h3>Add the Siri Shortcut</h3>
                 <p class="muted">This shortcut sends your H-E-B cart to HEBPath.</p>
                 <div class="cta-row">
-                  <a class="btn" href="https://www.google.com" aria-label="Shortcut link placeholder">Add Shortcut (placeholder)</a>
+                  <a class="btn" href="https://www.icloud.com/shortcuts/25cba86316f842628589eb58bdac980d" aria-label="Shortcut link">Add Shortcut</a>
                 </div>
-                <p>When you provide the link, it will replace the button above.</p>
               </div>
             </article>
 
