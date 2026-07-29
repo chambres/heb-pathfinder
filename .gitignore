@@ -7,6 +7,10 @@ go/
 
 # ignore vscode settings
 .vscode/
+
+# local tooling (impeccable design detector), not part of this repo
+.claude/
+.codex/
 pycache/
 __pycache__/
 

@@ -3,220 +3,176 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0c0d0f" />
     <title>HEBPath Setup</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <style>
+      /* Setup, same night-mode transit world as the map:
+         black ground, white signal, Libre Franklin, numbered stops
+         strung on a white line. */
       :root{
-        --bg:#0b0b0d; --fg:#e8eef6; --muted:#a8b0bd; --accent:#cfe8ff; --accent-700:#001e40;
-        --glass: rgba(16,18,20,0.55);
-        --glass-brd: rgba(255,255,255,0.14);
-        --card: rgba(16,18,20,0.65);
+        --bg:      #0c0d0f;
+        --panel:   #121316;
+        --elev:    #191b1f;
+        --ink:     #f5f6f8;
+        --ink-70:  #b4b7be;
+        --ink-45:  #797c84;
+        --line:    #2b2d33;
+        --line-2:  #202227;
+        --signal:  #ffffff;
+        --sans: "Libre Franklin", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+        --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
       }
-      *, *::before, *::after{ box-sizing: border-box; }
-      html, body{ height:100%; background:var(--bg); color:var(--fg); margin:0; font: 15px/1.5 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-
-      .bg-gradient{ position:fixed; inset:0; z-index:-1; pointer-events:none; filter: blur(60px) saturate(1.1); opacity:.95; background:
-        radial-gradient(1200px 800px at 10% 10%, rgba(100,160,255,.25), transparent 70%),
-        radial-gradient(900px 700px at 90% 20%, rgba(180,120,255,.18), transparent 70%),
-        radial-gradient(900px 700px at 30% 90%, rgba(120,255,200,.15), transparent 70%),
-        linear-gradient(180deg, rgba(10,12,14,1), rgba(10,12,14,.92));
-        animation: bgFloat 26s linear infinite; }
-      @keyframes bgFloat{ 0%{background-position:0 0,0 0,0 0,0 0} 50%{background-position:30px -20px,-40px 35px,40px -30px,0 0} 100%{background-position:0 0,0 0,0 0,0 0} }
+      *, *::before, *::after{ box-sizing:border-box; }
+      html, body{ height:100%; margin:0; background:var(--bg); color:var(--ink);
+        font:400 15px/1.6 var(--sans); -webkit-font-smoothing:antialiased; }
 
       .wrap{ display:grid; grid-template-rows:auto 1fr; min-height:100dvh; }
-      .topbar{ position:sticky; top:0; z-index:10; height:56px; display:flex; align-items:center; justify-content:space-between; padding:12px 16px; backdrop-filter: blur(14px) saturate(1.05); -webkit-backdrop-filter: blur(14px) saturate(1.05); background:linear-gradient(to bottom, rgba(0,0,0,.28), rgba(0,0,0,0)); border-bottom:1px solid var(--glass-brd); }
-      .topbar h1{ font-size:18px; margin:0; font-weight:650; letter-spacing:.2px; }
-      .container{ max-width:980px; margin:16px auto 80px; padding:0 16px; }
+      .topbar{
+        position:sticky; top:0; z-index:10; height:60px;
+        display:flex; align-items:center; justify-content:space-between;
+        padding:0 18px; background:var(--panel); border-bottom:2px solid var(--signal);
+      }
+      .topbar h1{ margin:0; font-weight:900; font-size:24px; letter-spacing:-.02em; text-transform:lowercase; }
+      h1 .heb{ color:var(--ink); }
+      h1 .path{ color:var(--ink-45); }
+      #backLink{
+        font-size:12px; font-weight:800; letter-spacing:.02em; text-transform:uppercase;
+        color:var(--ink); text-decoration:none;
+        padding:7px 13px; border:1.5px solid var(--line); border-radius:999px;
+      }
+      #backLink:visited{ color:var(--ink); }
+      #backLink:hover{ background:var(--signal); color:var(--bg); border-color:var(--signal); }
 
-      .hero{ display:grid; gap:12px; margin:12px 0 18px; }
-      .hero .title{ font-size:28px; font-weight:700; letter-spacing:.2px; }
-      .hero .sub{ color:var(--muted); }
+      .container{ max-width:760px; margin:0 auto; padding:0 24px 96px; }
 
-      .card{ background:var(--card); border:1px solid var(--glass-brd); border-radius:16px; padding:14px; box-shadow: 0 20px 60px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.06); }
-      .steps{ display:grid; gap:12px; }
-      .step{ display:grid; grid-template-columns: 40px 1fr; gap:10px; align-items:start; padding:12px; background: var(--glass); border:1px solid var(--glass-brd); border-radius:14px; }
-      .badge{ width:32px; height:32px; border-radius:50%; display:grid; place-items:center; font-weight:800; background:var(--accent-700); color:var(--accent); border:1px solid var(--glass-brd); }
-      .step h3{ margin:.2rem 0 .2rem; font-size:16px; }
-      .muted{ color:var(--muted); font-size:13px; }
+      /* HERO — big Franklin Black headline, like a station-board title */
+      .hero{ padding:60px 0 34px; }
+      .hero .title{ font-weight:900; font-size:clamp(36px, 6.5vw, 60px); line-height:1.02; letter-spacing:-.03em; text-transform:uppercase; }
+      .hero .sub{ margin-top:18px; max-width:56ch; font-size:17px; color:var(--ink-70); }
 
-      .cta-row{ display:flex; flex-wrap:wrap; gap:10px; margin-top:8px; }
-      .btn{ display:inline-flex; align-items:center; gap:8px; padding:10px 12px; border-radius:12px; background:#0f62fe15; color:var(--accent); text-decoration:none; border:1px solid var(--glass-brd); }
-      .btn:active{ transform: translateY(1px); }
+      /* STEPS — strung on the white line, like stations */
+      .steps{ display:block; position:relative; margin-top:8px; }
+      .step{
+        position:relative;
+        display:grid; grid-template-columns:52px 1fr; gap:0 22px;
+        padding:28px 0;
+      }
+      /* the line segment between one stop and the next */
+      .step:not(:last-child)::before{
+        content:""; position:absolute; left:19px; top:40px; bottom:-28px; width:3px;
+        background:var(--signal); z-index:0;
+      }
+      .badge{
+        position:relative; z-index:1;
+        width:40px; height:40px; display:grid; place-items:center;
+        font-weight:800; font-size:17px; color:var(--bg); background:var(--signal);
+        border-radius:50%; box-shadow:0 0 0 4px var(--bg);
+      }
+      .step h3{ margin:6px 0 6px; font-weight:900; font-size:23px; letter-spacing:-.01em; text-transform:uppercase; }
+      .step > div > .muted{ margin:0 0 14px; }
+      .muted{ color:var(--ink-45); font-size:14px; }
 
-      h1 .heb {
-        color: #ff4b4b; /* red */
+      ol, ul{ margin:.5rem 0 1rem; padding-left:1.2rem; }
+      li{ margin:.3rem 0; }
+      li::marker{ color:var(--ink-45); font-variant-numeric:tabular-nums; }
+      strong{ font-weight:700; color:var(--ink); }
+
+      .cta-row{ display:flex; flex-wrap:wrap; gap:10px; margin-top:6px; }
+      .btn{
+        display:inline-flex; align-items:center; gap:8px; padding:13px 22px;
+        font-weight:800; font-size:13px; letter-spacing:.03em; text-transform:uppercase;
+        background:var(--signal); color:var(--bg); text-decoration:none; border:1.5px solid var(--signal); border-radius:999px;
+      }
+      .btn:hover{ background:transparent; color:var(--ink); }
+
+      /* screenshots as a dark contact-sheet */
+      .photo-grid{
+        display:grid; grid-template-columns:repeat(auto-fill, minmax(132px, 1fr));
+        gap:14px; margin-top:20px;
+      }
+      .photo-slot{
+        width:100%; aspect-ratio:9/19.5; object-fit:cover; object-position:top; display:block;
+        background:var(--elev); border:1px solid var(--line); border-radius:6px;
       }
 
-      h1 .path {
-        color: #ffffff; /* white */
+      .note{ padding:13px 16px; border:1px solid var(--line); background:var(--elev); font-size:14px; border-radius:6px; }
+      .note strong{ display:block; margin-bottom:3px; font-weight:800; font-size:11px; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-45); }
+      .foot{ margin-top:36px; padding-top:20px; border-top:1px solid var(--line); color:var(--ink-45); font-size:13px; }
+      .foot a{ color:var(--ink-70); }
+
+      @media (max-width:700px){
+        .container{ padding:0 18px 72px; }
+        .hero{ padding:40px 0 26px; }
+        .step{ grid-template-columns:44px 1fr; gap:0 16px; padding:24px 0; }
+        .step:not(:last-child)::before{ left:15px; }
+        .badge{ width:34px; height:34px; font-size:15px; }
       }
 
-      .photo-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-        gap: 10px;
-        margin-top: 10px;
-      }
-      .photo-slot {
-        width: 100%;
-        aspect-ratio: 9 / 19.5; /* iPhone portrait shape */
-        border-radius: 12px;
-        border: 1px solid var(--glass-brd);
-        background: rgba(255,255,255,.02);
-        overflow: hidden;
-        position: relative;
-      }
-      .photo-slot img,
-      img.photo-slot {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        display: block;
-        border-radius: 12px;
-      }
-
-      ol, ul { margin: .25rem 0 .75rem .95rem; }
-
-      .foot{ margin-top:22px; color:var(--muted); font-size:12px; text-align:center; }
-      .note{ padding:10px 12px; border-radius:12px; background: rgba(255,255,255,.06); border:1px solid var(--glass-brd); }
-
-      @media (max-width:700px){ .hero .title{ font-size:24px; } }
-
-      #backLink { color:#ffffff; text-decoration:none; font-size:13px; margin-left:12px; }
-      #backLink:visited { color:#ffffff; }
-      #backLink:hover { text-decoration: underline; }
-
-      /* ===== Modal & Backdrop (desktop only) ===== */
-      body.modal-open{ overflow: hidden; }
+      /* ===== Desktop modal ===== */
+      body.modal-open{ overflow:hidden; }
       .overlay{
-        position: fixed;
-        inset: 0;
-        display: none;
-        align-items: center;
-        justify-content: center;
-        background: rgba(8,10,12,.55);
-        backdrop-filter: blur(10px) saturate(1.1);
-        -webkit-backdrop-filter: blur(10px) saturate(1.1);
-        z-index: 50;
-        padding: 24px;
+        position:fixed; inset:0; display:none; align-items:center; justify-content:center;
+        background:rgba(0,0,0,.7); z-index:50; padding:24px;
       }
       .overlay.show{ display:flex; }
-
       .modal{
-        width: 100%;
-        max-width: 860px;
-        max-height: min(90vh, 860px);     /* prevent off-screen growth */
-        background: var(--card);
-        border: 1px solid var(--glass-brd);
-        border-radius: 18px;
-        box-shadow: 0 30px 80px rgba(0,0,0,.55);
-        display: flex;
-        flex-direction: column;            /* allow internal scroll area */
+        width:100%; max-width:720px; max-height:min(88vh, 820px);
+        background:var(--panel); border:1px solid var(--line); border-radius:10px;
+        display:flex; flex-direction:column; box-shadow:0 30px 90px rgba(0,0,0,.6);
       }
       .modal header{
         display:flex; align-items:center; justify-content:space-between; gap:12px;
-        padding:18px; border-bottom:1px solid var(--glass-brd);
+        padding:18px 22px; border-bottom:1px solid var(--line);
       }
-      .modal h2{ font-size:20px; margin:0; font-weight:750; letter-spacing:.2px; }
-      .modal .content{
-        padding:18px;
-        overflow: auto;                    /* scroll the content, not the page */
-        /* Make scrollbar visible on dark modal backgrounds (Firefox + WebKit) */
-        scrollbar-width: thin; /* Firefox */
-        scrollbar-color: rgba(255,255,255,.12) transparent; /* thumb then track (Firefox) */
-      }
-      /* WebKit browsers (Chrome, Edge, Safari) */
-      .modal .content::-webkit-scrollbar { width: 12px; height: 12px; }
-      .modal .content::-webkit-scrollbar-track { background: transparent; }
-      .modal .content::-webkit-scrollbar-thumb {
-        background: rgba(255,255,255,.12);
-        border-radius: 8px;
-        border: 3px solid transparent; /* creates padding around thumb */
-        background-clip: padding-box;
-      }
-  .modal .content::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.2); }
+      .modal h2{ margin:0; font-weight:900; font-size:16px; letter-spacing:.02em; text-transform:uppercase; }
+      .modal .content{ padding:22px; overflow:auto; scrollbar-width:thin; scrollbar-color:var(--line) transparent; }
+      .modal .content::-webkit-scrollbar{ width:10px; }
+      .modal .content::-webkit-scrollbar-track{ background:transparent; }
+      .modal .content::-webkit-scrollbar-thumb{ background:var(--line); border-radius:8px; border:3px solid transparent; background-clip:padding-box; }
+      .modal p{ margin:0 0 12px; }
+      .modal .muted{ color:var(--ink-70); }
 
-      /* Better button typography & layout */
-      .btn-row{ display:flex; justify-content:center; gap:12px; flex-wrap:wrap; margin:8px 0 6px; }
+      .btn-row{ display:flex; gap:10px; flex-wrap:wrap; margin:18px 0 4px; }
       .button{
-        border:1px solid var(--glass-brd);
-        border-radius:14px;
-        padding:12px 16px;
-        font-size:16px;          /* nicer size */
-        font-weight:750;         /* stronger */
-        letter-spacing:.2px;     /* subtle tracking */
-        line-height:1.1;
-        cursor:pointer;
-        background:#0f62fe15;
-        color:var(--accent);
+        font-weight:800; font-size:13px; letter-spacing:.03em; text-transform:uppercase;
+        padding:12px 18px; border-radius:999px; cursor:pointer;
+        background:var(--signal); color:var(--bg); border:1.5px solid var(--signal);
       }
-      .button.ghost{
-        background:#ffffff12; color:var(--fg);
-      }
-      .button.circle{
-        border-radius:999px; padding:12px 18px;
-      }
+      .button:hover{ background:transparent; color:var(--ink); }
+      .button.ghost{ background:transparent; color:var(--ink-70); border-color:var(--line); }
+      .button.ghost:hover{ background:var(--elev); color:var(--ink); border-color:var(--ink-45); }
+      a.button{ text-decoration:none; display:inline-flex; align-items:center; }
 
       .kbd{
-        background: rgba(255,255,255,.08);
-        border:1px solid var(--glass-brd);
-        padding:.15em .45em; border-radius:6px; font-weight:600;
+        font:700 12px/1 var(--mono); background:var(--elev); color:var(--ink);
+        border:1px solid var(--line); padding:.25em .5em; border-radius:4px;
       }
 
-      /* Snippet section with sticky, centered copy button */
-      .snippet-section{
-        margin-top:12px;
-        border:1px solid var(--glass-brd);
-        border-radius:14px;
-        overflow:hidden;
-      }
+      .snippet-section{ margin-top:20px; border-top:1px solid var(--line); }
       .copybar{
-        position: sticky;
-        top: 0;
-        z-index: 1;
-        display:flex;
-        align-items:center;
-        justify-content:center;  /* front and center */
-        gap:10px;
-        padding:12px;
-        background: transparent; /* make the copybar clear */
-        border-bottom: none; /* remove border for a clear look */
+        position:sticky; top:0; z-index:1; display:flex; align-items:center; gap:12px;
+        padding:14px 0; background:var(--panel);
       }
       .copybtn{
-        border:1px solid var(--glass-brd);
-        background:#0f62fe15;
-        color:var(--accent);
-        padding:12px 16px;
-        border-radius:999px;     /* pill, prominent */
-        font-size:16px;
-        font-weight:800;
-        letter-spacing:.3px;
-        cursor:pointer;
+        font-weight:800; font-size:13px; letter-spacing:.03em; text-transform:uppercase;
+        padding:12px 18px; border-radius:999px; cursor:pointer;
+        background:var(--signal); color:var(--bg); border:1.5px solid var(--signal);
       }
-      .copyok{ font-size:12px; color:#8be49c; display:none; }
+      .copybtn:hover{ background:transparent; color:var(--ink); }
+      .copyok{ display:none; font-weight:700; font-size:12px; letter-spacing:.03em; text-transform:uppercase; color:var(--ink-45); }
 
-pre.codeblock {
-  background: none !important; /* remove any gray or glass background */
-  color: var(--fg) !important;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 13px;
-  line-height: 1.45;
-  margin: 0;
-  padding: 0;
-  border: none !important;
-  box-shadow: none !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-}
-      /* Close button */
-      .closebtn{
-        border:1px solid var(--glass-brd);
-        background:#ff5a5a22;
-        color:#ffd6d6;
+      pre.codeblock{
+        margin:0; padding:14px; max-height:240px; overflow:auto;
+        background:var(--bg); border:1px solid var(--line); border-radius:6px;
+        color:var(--ink-70); font:12px/1.5 var(--mono);
+        white-space:pre-wrap; word-break:break-all;
       }
     </style>
   </head>
   <body>
-    <div  aria-hidden="true"></div>
 
     <script id="desktopSnippetSrc" type="text/plain">
 var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",n="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-$",e={};function t(r,o){if(!e[r]){e[r]={};for(var n=0;n<r.length;n++)e[r][r.charAt(n)]=n}return e[r][o]}var i={compressToBase64:function(r){if(null==r)return"";var n=i._compress(r,6,function(r){return o.charAt(r)});switch(n.length%4){default:case 0:return n;case 1:return n+"===";case 2:return n+"==";case 3:return n+"="}},decompressFromBase64:function(r){return null==r?"":""==r?null:i._decompress(r.length,32,function(n){return t(o,r.charAt(n))})},compressToUTF16:function(o){return null==o?"":i._compress(o,15,function(o){return r(o+32)})+" "},decompressFromUTF16:function(r){return null==r?"":""==r?null:i._decompress(r.length,16384,function(o){return r.charCodeAt(o)-32})},compressToUint8Array:function(r){for(var o=i.compress(r),n=new Uint8Array(2*o.length),e=0,t=o.length;e<t;e++){var s=o.charCodeAt(e);n[2*e]=s>>>8,n[2*e+1]=s%256}return n},decompressFromUint8Array:function(o){if(null==o)return i.decompress(o);for(var n=new Array(o.length/2),e=0,t=n.length;e<t;e++)n[e]=256*o[2*e]+o[2*e+1];var s=[];return n.forEach(function(o){s.push(r(o))}),i.decompress(s.join(""))},compressToEncodedURIComponent:function(r){return null==r?"":i._compress(r,6,function(r){return n.charAt(r)})},decompressFromEncodedURIComponent:function(r){return null==r?"":""==r?null:(r=r.replace(/ /g,"+"),i._decompress(r.length,32,function(o){return t(n,r.charAt(o))}))},compress:function(o){return i._compress(o,16,function(o){return r(o)})},_compress:function(r,o,n){if(null==r)return"";var e,t,i,s={},u={},a="",p="",c="",l=2,f=3,h=2,d=[],m=0,v=0;for(i=0;i<r.length;i+=1)if(a=r.charAt(i),Object.prototype.hasOwnProperty.call(s,a)||(s[a]=f++,u[a]=!0),p=c+a,Object.prototype.hasOwnProperty.call(s,p))c=p;else{if(Object.prototype.hasOwnProperty.call(u,c)){if(c.charCodeAt(0)<256){for(e=0;e<h;e++)m<<=1,v==o-1?(v=0,d.push(n(m)),m=0):v++;for(t=c.charCodeAt(0),e=0;e<8;e++)m=m<<1|1&t,v==o-1?(v=0,d.push(n(m)),m=0):v++,t>>=1}else{for(t=1,e=0;e<h;e++)m=m<<1|t,v==o-1?(v=0,d.push(n(m)),m=0):v++,t=0;for(t=c.charCodeAt(0),e=0;e<16;e++)m=m<<1|1&t,v==o-1?(v=0,d.push(n(m)),m=0):v++,t>>=1}0==--l&&(l=Math.pow(2,h),h++),delete u[c]}else for(t=s[c],e=0;e<h;e++)m=m<<1|1&t,v==o-1?(v=0,d.push(n(m)),m=0):v++,t>>=1;0==--l&&(l=Math.pow(2,h),h++),s[p]=f++,c=String(a)}if(""!==c){if(Object.prototype.hasOwnProperty.call(u,c)){if(c.charCodeAt(0)<256){for(e=0;e<h;e++)m<<=1,v==o-1?(v=0,d.push(n(m)),m=0):v++;for(t=c.charCodeAt(0),e=0;e<8;e++)m=m<<1|1&t,v==o-1?(v=0,d.push(n(m)),m=0):v++,t>>=1}else{for(t=1,e=0;e<h;e++)m=m<<1|t,v==o-1?(v=0,d.push(n(m)),m=0):v++,t=0;for(t=c.charCodeAt(0),e=0;e<16;e++)m=m<<1|1&t,v==o-1?(v=0,d.push(n(m)),m=0):v++,t>>=1}0==--l&&(l=Math.pow(2,h),h++),delete u[c]}else for(t=s[c],e=0;e<h;e++)m=m<<1|1&t,v==o-1?(v=0,d.push(n(m)),m=0):v++,t>>=1;0==--l&&(l=Math.pow(2,h),h++)}for(t=2,e=0;e<h;e++)m=m<<1|1&t,v==o-1?(v=0,d.push(n(m)),m=0):v++,t>>=1;for(;;){if(m<<=1,v==o-1){d.push(n(m));break}v++}return d.join("")},decompress:function(r){return null==r?"":""==r?null:i._decompress(r.length,32768,function(o){return r.charCodeAt(o)})},_decompress:function(o,n,e){var t,i,s,u,a,p,c,l=[],f=4,h=4,d=3,m="",v=[],g={val:e(0),position:n,index:1};for(t=0;t<3;t+=1)l[t]=t;for(s=0,a=Math.pow(2,2),p=1;p!=a;)u=g.val&g.position,g.position>>=1,0==g.position&&(g.position=n,g.val=e(g.index++)),s|=(u>0?1:0)*p,p<<=1;switch(s){case 0:for(s=0,a=Math.pow(2,8),p=1;p!=a;)u=g.val&g.position,g.position>>=1,0==g.position&&(g.position=n,g.val=e(g.index++)),s|=(u>0?1:0)*p,p<<=1;c=r(s);break;case 1:for(s=0,a=Math.pow(2,16),p=1;p!=a;)u=g.val&g.position,g.position>>=1,0==g.position&&(g.position=n,g.val=e(g.index++)),s|=(u>0?1:0)*p,p<<=1;c=r(s);break;case 2:return""}for(l[3]=c,i=c,v.push(c);;){if(g.index>o)return"";for(s=0,a=Math.pow(2,d),p=1;p!=a;)u=g.val&g.position,g.position>>=1,0==g.position&&(g.position=n,g.val=e(g.index++)),s|=(u>0?1:0)*p,p<<=1;switch(c=s){case 0:for(s=0,a=Math.pow(2,8),p=1;p!=a;)u=g.val&g.position,g.position>>=1,0==g.position&&(g.position=n,g.val=e(g.index++)),s|=(u>0?1:0)*p,p<<=1;l[h++]=r(s),c=h-1,f--;break;case 1:for(s=0,a=Math.pow(2,16),p=1;p!=a;)u=g.val&g.position,g.position>>=1,0==g.position&&(g.position=n,g.val=e(g.index++)),s|=(u>0?1:0)*p,p<<=1;l[h++]=r(s),c=h-1,f--;break;case 2:return v.join("")}if(0==f&&(f=Math.pow(2,d),d++),l[c])m=l[c];else{if(c!==h)return null;m=i+i.charAt(0)}v.push(m),l[h++]=i+m.charAt(0),i=m,0==--f&&(f=Math.pow(2,d),d++)}}};return i}();"function"==typeof define&&define.amd?define(function(){return LZString}):"undefined"!=typeof module&&null!=module?module.exports=LZString:"undefined"!=typeof angular&&null!=angular&&angular.module("LZString",[]).factory("LZString",function(){return LZString});
@@ -399,26 +355,32 @@ function waitForPredicate(predicate, { root = document, timeoutMs = 30000 } = {}
     <div id="overlay" class="overlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-describedby="modalDesc">
       <div class="modal">
         <header>
-          <h2 id="modalTitle">Designed for iOS (iPhone/iPad)</h2>
-          <button id="closeModal" class="button ghost circle" aria-label="Close modal">Close</button>
+          <h2 id="modalTitle">You’re on a computer</h2>
+          <button id="closeModal" class="button ghost" aria-label="Close this message">Close</button>
         </header>
 
         <div class="content">
-          <p id="modalDesc" class="muted" style="margin:0 0 10px 0;">
-            You’re visiting from a desktop browser. HEBPath works best when you open this page on your iPhone and use the Shortcuts flow below. However, if you really want to use it on desktop, you can. 
+          <p id="modalDesc">
+            HEBPath is really meant for your phone. The easy way is to open this page on your iPhone and
+            do the three steps behind this box.
           </p>
-          <p>Copy the code, open Dev Tools with F12, go to the Console tab, paste the code, and press Enter.</p>
+          <p class="muted">
+            It works on a computer too, you just have to do it by hand. Copy the snippet below, open your
+            H-E-B cart in another tab, press <span class="kbd">F12</span> to open DevTools, paste the snippet
+            into the Console, and hit <span class="kbd">Enter</span>. The first time, Chrome makes you type
+            <span class="kbd">allow pasting</span> before it’ll let you.
+          </p>
 
           <div class="btn-row">
-            <button id="showSnippetBtn" class="button circle">I know what I'm doing — Continue</button>
-            <a href="#" id="continueOnIOS" class="button ghost circle">Go back to iOS Instructions</a>
+            <button id="showSnippetBtn" class="button">Show me the snippet</button>
+            <a href="#" id="continueOnIOS" class="button ghost">Back to the phone steps</a>
           </div>
 
           <!-- Snippet appears here -->
           <section id="snippetSection" class="snippet-section" style="display:none;">
             <div class="copybar">
-              <button id="copyCode" class="copybtn" type="button">Copy code</button>
-              <span id="copyOk" class="copyok">Copied!</span>
+              <button id="copyCode" class="copybtn" type="button">Copy snippet</button>
+              <span id="copyOk" class="copyok">Copied</span>
             </div>
             <pre class="codeblock"><code id="desktopSnippet" type="text/plain">
             </code></pre>
@@ -443,24 +405,27 @@ function waitForPredicate(predicate, { root = document, timeoutMs = 30000 } = {}
       <header class="topbar">
         <h1><span class="heb">heb</span><span class="path">path</span></h1>
         <div class="row">
-          <a href="./" id="backLink">back</a>
+          <a href="./" id="backLink">back to map</a>
         </div>
       </header>
 
       <main class="container">
         <section class="hero">
-          <div class="title">Get HEBPath Ready</div>
-          <div class="sub">It seems you <strong>haven't set up HEBPath yet</strong>, or forgot you have to <strong>share your cart to the shortcut</strong>.</div>
+          <div class="title">No cart to route yet</div>
+          <div class="sub">
+            Either HEBPath isn’t set up on your phone yet, or you haven’t shared a cart to it.
+            Here’s the whole thing. Steps 1 and 2 you do once; step 3 is the one you repeat.
+          </div>
         </section>
 
-        <section class="card">
+        <section>
           <div class="steps">
             <!-- Step 1 -->
             <article class="step" id="step-1">
               <div class="badge">1</div>
               <div>
-                <h3>Enable “Allow Running Scripts”</h3>
-                <p class="muted">This lets the app process your cart and compute a route.</p>
+                <h3>Turn on “Allow Running Scripts”</h3>
+                <p class="muted">The shortcut can’t read your cart without this turned on.</p>
                 <ol>
                   <li>Open the <strong>Settings</strong> app on your iPhone.</li>
                   <li>Scroll all the way down until you find <strong>Apps</strong>.</li>
@@ -481,10 +446,10 @@ function waitForPredicate(predicate, { root = document, timeoutMs = 30000 } = {}
             <article class="step" id="step-2">
               <div class="badge">2</div>
               <div>
-                <h3>Add the Siri Shortcut</h3>
-                <p class="muted">This shortcut sends your H-E-B cart to HEBPath.</p>
+                <h3>Add the shortcut</h3>
+                <p class="muted">This is the part that sends your cart over to HEBPath.</p>
                 <div class="cta-row">
-                  <a class="btn" href="https://www.icloud.com/shortcuts/25cba86316f842628589eb58bdac980d" aria-label="Shortcut link">Add Shortcut</a>
+                  <a class="btn" href="https://www.icloud.com/shortcuts/25cba86316f842628589eb58bdac980d" aria-label="Shortcut link">Add shortcut</a>
                 </div>
               </div>
             </article>
@@ -493,7 +458,8 @@ function waitForPredicate(predicate, { root = document, timeoutMs = 30000 } = {}
             <article class="step" id="step-3">
               <div class="badge">3</div>
               <div>
-                <h3>Share your H-E-B cart to the shortcut</h3>
+                <h3>Share your cart to it</h3>
+                <p class="muted">You’ll do this every time you want a new route.</p>
                 <ol>
                   <li>Open your <strong>H-E-B</strong> app and go to your <strong>Cart</strong>.</li>
                   <li>You may have delivery or the wrong location selected. To change this:</li>
@@ -506,7 +472,7 @@ function waitForPredicate(predicate, { root = document, timeoutMs = 30000 } = {}
                   <li>Tap <strong>Share</strong>.</li>
                   <li>In the share sheet, scroll down until you see <strong>HEBPath</strong>, then tap it.</li>
                 </ol>
-                <p class="muted">Tip: If you don't see it, scroll all the way to the bottom and tap <em>Edit Actions…</em> to enable it.</p>
+                <p class="note"><strong>Don’t see it?</strong>Scroll to the very bottom of the share sheet, tap <em>Edit Actions…</em>, and switch HEBPath on.</p>
                 <div class="photo-grid">
                   <img src="./photos/hebphotos/choosepickuptime.PNG" alt="Choose pickup time" class="photo-slot" />
                   <img src="./photos/hebphotos/changestore.PNG" alt="Change store" class="photo-slot" />
@@ -518,7 +484,7 @@ function waitForPredicate(predicate, { root = document, timeoutMs = 30000 } = {}
               </div>
             </article>
           </div>
-          <p class="foot">Questions later? You can always reopen this page by clicking the instructions at the top of the page. To go back click <a href="./">here</a>.</p>
+          <p class="foot">You can get back here anytime from the <em>setup</em> link on the map. <a href="./">Back to the map</a>.</p>
         </section>
       </main>
     </div>
