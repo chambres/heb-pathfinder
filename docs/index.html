@@ -286,7 +286,7 @@
       window.addEventListener("resize", applyOverlayOrientation);
 
       /* ---------- data source & cache ---------- */
-      const isDemo = new URLSearchParams(location.search).get("demo") === "1" || /\/demo\/?$/.test(location.pathname);
+      const isDemo = /\/demo\/?$/.test(location.pathname);
       const demoDataUrl = isDemo ? new URL("demo/data.json", document.baseURI) : null;
       if (isDemo) {
         history.replaceState(null, "", new URL("demo", document.baseURI).pathname);
