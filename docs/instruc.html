@@ -182,28 +182,27 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
   timeoutMs = 30000
 } = {}) {
   return new Promise((resolve, reject) => {
+    let timer;
+    let observer;
+
     const check = () => {
       const nodes = Array.from(root.querySelectorAll(selector));
       if (nodes.length >= min) {
         observer.disconnect();
+        clearTimeout(timer);
         resolve(nodes);
       }
     };
 
-    const observer = new MutationObserver(check);
+    observer = new MutationObserver(check);
     observer.observe(root, { childList: true, subtree: true, attributes: true });
 
-    // initial pass (in case they're already there)
-    check();
-
-    const t = setTimeout(() => {
+    timer = setTimeout(() => {
       observer.disconnect();
       reject(new Error(`Timed out waiting for selector: "${selector}"`));
     }, timeoutMs);
 
-    // Clean up timer on resolve
-    const origResolve = resolve;
-    resolve = (v) => { clearTimeout(t); origResolve(v); };
+    check();
   });
 }
 
@@ -211,37 +210,9 @@ function waitForElement(selector, opts = {}) {
   return waitForElements(selector, { ...opts, min: 1 }).then(nodes => nodes[0]);
 }
 
-function waitForPredicate(predicate, { root = document, timeoutMs = 30000 } = {}) {
-  return new Promise((resolve, reject) => {
-    const check = () => {
-      try {
-        const node = predicate();
-        if (node) {
-          observer.disconnect();
-          clearTimeout(t);
-          resolve(node);
-        }
-      } catch (e) {
-        // ignore predicate errors while DOM settles
-      }
-    };
-
-    const observer = new MutationObserver(check);
-    observer.observe(root, { childList: true, subtree: true, attributes: true });
-
-    // initial pass
-    check();
-
-    const t = setTimeout(() => {
-      observer.disconnect();
-      reject(new Error('Timed out waiting for predicate to return a truthy value.'));
-    }, timeoutMs);
-  });
-}
-
 (async () => {
   try {
-    let storeId = '543'; // default store ID
+    let storeId;
 
     // Grab product anchors
     const elements = await waitForElements('[data-qe-id="itemRowDetailsName"]', { min: 1, timeoutMs: 30000 });
@@ -265,29 +236,21 @@ function waitForPredicate(predicate, { root = document, timeoutMs = 30000 } = {}
 
     console.log('productIds:', productIds);
 
-    // Open reservation modal & change store flow (unchanged)
-    const chooseBtn = await waitForElement('button[data-qe-id="chooseReservationTime"]', { timeoutMs: 30000 });
+    // Open the current reservation, then inspect the selected store.
+    const chooseBtn = await waitForElement('button[data-qe-id="changeReservationTime"]', { timeoutMs: 30000 });
     chooseBtn.click();
 
     const changeStoreBtn = await waitForElement('button[data-testid="fulfillment_change_store"]', { timeoutMs: 30000 });
     changeStoreBtn.click();
 
-    const span = await waitForPredicate(() => {
-      return Array.from(document.querySelectorAll('span'))
-        .find(el => el.textContent && el.textContent.includes(' Selected Store'));
-    }, { timeoutMs: 30000 });
-
-    const li = span.closest('li');
-    const link = li ? li.querySelector('a[href]') : null;
+    const selectedStoreBtn = await waitForElement('button[data-qe-id="selectedStoreButton"]', { timeoutMs: 30000 });
+    const storeCard = selectedStoreBtn.closest('li') || selectedStoreBtn.closest('[data-qe-id="storeCard"]');
+    const link = storeCard ? storeCard.querySelector('a[href*="/heb-store/"]') : null;
     const href = link ? link.href : null;
-
-    if (href) {
-      // split by '-' and get last part
-      storeId = href.split('-').filter(Boolean).pop();
-      console.log('Extracted store ID:', storeId);
-    } else {
-      console.log('No link found inside the selected store <li>.');
-    }
+    const storeIdMatch = href ? href.match(/-(\d+)\/?$/) : null;
+    if (!storeIdMatch) throw new Error('Could not determine the selected H-E-B store ID.');
+    storeId = storeIdMatch[1];
+    console.log('Extracted store ID:', storeId);
 
     const closebtn = await waitForElement('button[data-qe-id="modalClose"]', { timeoutMs: 30000 });
     closebtn.click();
@@ -299,6 +262,7 @@ function waitForPredicate(predicate, { root = document, timeoutMs = 30000 } = {}
           const res = await fetch(`https://www.heb.com/pals/v2.0/location/store/${storeId}/products/${id}`, {
             credentials: "include"
           });
+          if (!res.ok) throw new Error(`Product location request failed: ${res.status} ${res.statusText}`);
           const obj = await res.json();
           // Preserve original object, just add title
           return { ...obj, title: idTitleMap.get(id) ?? null };
@@ -311,7 +275,7 @@ function waitForPredicate(predicate, { root = document, timeoutMs = 30000 } = {}
 
     // Log combined JSON (data + svg), formatted
     // --- SVG fetch & cleaning (unchanged) ---
-    const url = "https://www.heb.com/atlas/v1.0/image?locationNumber=543&format=svg&style=none&label=false&drawPsas=false&drawAisleMarkers=false&drawCombinedFixtures=true&drawDepartmentLabels=false&hidePartnerFixtures=true";
+    const url = `https://www.heb.com/atlas/v1.0/image?locationNumber=${encodeURIComponent(storeId)}&format=svg&style=none&label=false&drawPsas=false&drawAisleMarkers=false&drawCombinedFixtures=true&drawDepartmentLabels=false&hidePartnerFixtures=true`;
     const resp = await fetch(url, { credentials: "include" });
     if (!resp.ok) throw new Error(`Fetch failed: ${resp.status} ${resp.statusText}`);
     const svgText = await resp.text();

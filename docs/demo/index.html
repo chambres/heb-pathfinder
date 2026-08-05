@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0c0d0f" />
+    <title>HEBPath Demo</title>
+  </head>
+  <body>
+    <script>
+      const appPath = location.pathname.replace(/\/demo\/?$/, "/");
+      const appUrl = new URL(appPath, location.origin);
+      appUrl.searchParams.set("demo", "1");
+      location.replace(appUrl);
+    </script>
+  </body>
+</html>

@@ -33,3 +33,7 @@ The site caches your last computed path so reloads don’t require recalculating
 ## Try It
 
 **https://rhl.sh/heb**
+
+The predefined example route is available at **https://rhl.sh/heb/demo**. Its
+payload lives at `docs/demo/data.json`; replacing that file updates the demo
+without changing the UI or the normal cart-sharing flow.

@@ -232,13 +232,16 @@
         (function () {
           var base = document.createElement('base');
           var path = window.location.pathname;
+          var isDemoPath = /\/demo\/?$/.test(path);
 
           // Treat the current path as a "directory"
           // "/"      -> "/"
           // "/heb"   -> "/heb/"
           // "/heb/"  -> "/heb/"
           // "/heb-pathfinder/" -> "/heb-pathfinder/"
-          if (path === "" || path === "/") {
+          if (isDemoPath) {
+            base.href = path.replace(/demo\/?$/, "");
+          } else if (path === "" || path === "/") {
             base.href = "/";
           } else if (path.endsWith("/")) {
             base.href = path;
@@ -282,9 +285,16 @@
       mqlBottom.addEventListener?.("change", applyOverlayOrientation);
       window.addEventListener("resize", applyOverlayOrientation);
 
-      /* ---------- fragment & cache ---------- */
-      const LS_KEY_FRAGMENT = "heb_scout:fragment";   // compressed fragment string (raw)
-      const LS_KEY_CACHE    = "heb_scout:cache";      // structured cache
+      /* ---------- data source & cache ---------- */
+      const isDemo = new URLSearchParams(location.search).get("demo") === "1" || /\/demo\/?$/.test(location.pathname);
+      const demoDataUrl = isDemo ? new URL("demo/data.json", document.baseURI) : null;
+      if (isDemo) {
+        history.replaceState(null, "", new URL("demo", document.baseURI).pathname);
+      }
+
+      const storageNamespace = isDemo ? "heb_scout:demo" : "heb_scout";
+      const LS_KEY_FRAGMENT = `${storageNamespace}:fragment`;   // compressed fragment string (raw)
+      const LS_KEY_CACHE    = `${storageNamespace}:cache`;      // structured cache
 
       function getFragmentFromUrlOrStorage() {
         const urlFrag = location.hash ? location.hash.slice(1) : "";
@@ -870,8 +880,26 @@ function computePairIndices(wi, len){ if (len <= 1) return [0]; if (wi >= 0 && w
         setLoading(true, "Loading…");
         await init();
 
-        setLoading(true, "Reading your cart…");
-        const rawFrag = getFragmentFromUrlOrStorage();
+        let demoJson = null;
+        let rawFrag = "";
+        if (demoDataUrl) {
+          setLoading(true, "Loading example route…");
+          try {
+            const response = await fetch(demoDataUrl, { cache: "no-cache" });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            demoJson = await response.text();
+            if (!validateLooksLikeJson(demoJson)) throw new Error("Invalid JSON");
+            rawFrag = "demo";
+          } catch (error) {
+            console.error(error);
+            setError("The example route data could not be loaded.");
+            setLoading(false, "");
+            return;
+          }
+        } else {
+          setLoading(true, "Reading your cart…");
+          rawFrag = getFragmentFromUrlOrStorage();
+        }
         const cache   = loadCache();
 
         // If no fragment, try to restore entire view from cache
@@ -905,7 +933,7 @@ function computePairIndices(wi, len){ if (len <= 1) return [0]; if (wi >= 0 && w
         setLoading(true, "Reading your cart…");
         const decoded = decodeURIComponent(rawFrag);
         const trimmed = decoded.length >= 2 ? decoded.slice(1, -1) : decoded; // your existing normalization
-        const fragHash = hashStr(trimmed);
+        const fragHash = hashStr(demoJson ?? trimmed);
 
         // If cache matches, short-circuit
         if (cache && cache.fragmentHash === fragHash && cache.svg) {
@@ -926,7 +954,7 @@ const toSvg = (x,y)=>[ix + x, iy + y];
 
         // Else, decompress + run WASM and then build & save cache
         setLoading(true, "Reading your cart…");
-        const json = LZString.decompressFromEncodedURIComponent(trimmed);
+        const json = demoJson ?? LZString.decompressFromEncodedURIComponent(trimmed);
         if(!json){ setError("Couldn’t read the cart data. Share your cart from H-E-B again to get a fresh link."); setLoading(false, ""); return; }
 
         const payload = JSON.parse(json);
